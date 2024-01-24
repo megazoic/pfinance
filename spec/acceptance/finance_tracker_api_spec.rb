@@ -12,9 +12,9 @@ module FinanceTracker
             post '/transfers', JSON.generate(transfer)
             expect(last_response.status).to eq(200)
             parsed = JSON.parse(last_response.body)
-            puts "parsed is #{parsed['debit_id']}"
-            expect(parsed).to include('debit_id' => a_kind_of(Integer))
-            transfer.merge('id' => parsed['debit_id'])
+            puts "parsed is #{parsed['transfer_id']}"
+            expect(parsed).to include('transfer_id' => a_kind_of(Integer))
+            transfer.merge('id' => parsed['transfer_id'])
          end
         it 'records submitted tranfer' do
             pending 'Need to persist transfers'
