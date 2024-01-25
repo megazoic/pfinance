@@ -8,3 +8,6 @@ gem "rack-test"
 gem "sinatra"
 gem "rack"
 gem "rackup"
+gem "pg"
+gem "sequel"
+gem 'sequel_pg', '>= 1.8', require: 'sequel'
