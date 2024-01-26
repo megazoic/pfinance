@@ -40,7 +40,7 @@ module FinanceTracker
 
           expect(result).not_to be_success
           expect(result.transfer_ids).to eq(nil)
-          expect(result.error_message).to include('`payee` is required')
+          expect(result.error_message).to include('Invalid transfer: missing or corrupt data')
 
           expect(DB[:transfers].count).to eq(0)
         end
