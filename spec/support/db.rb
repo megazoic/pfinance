@@ -11,4 +11,7 @@ RSpec.configure do |c|
         DB[:accounts].insert(account_id: 2, name: "Vacation", normal: 1)
         DB[:categories].insert(category_id: 1, name: "Discretionary")
     end
+    c.around(:example, :db) do |example|
+        DB.transaction(rollback: :always) { example.run }
+    end    
 end

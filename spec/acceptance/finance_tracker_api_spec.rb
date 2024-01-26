@@ -3,7 +3,7 @@ require 'json'
 require_relative '../../app/api'
 
 module FinanceTracker
-    RSpec.describe 'Finance Tracker API' do
+    RSpec.describe 'Finance Tracker API', :db do
         include Rack::Test::Methods
         def app
             FinanceTracker::API.new

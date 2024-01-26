@@ -1,9 +1,8 @@
 require_relative '../../../app/ledger'
 require_relative '../../../config/sequel'
-require_relative '../../support/db'
 
 module FinanceTracker
-  RSpec.describe Ledger do
+  RSpec.describe Ledger, :aggregate_failures, :db do
     let(:ledger) { Ledger.new }
     let(:transfer) do
       {
@@ -12,17 +11,15 @@ module FinanceTracker
           'amount' => 14000,
           'user_id' => 1,
           'category_id' => 1
-        }, 'debit' => {
-          'account_id' => 1
-        }, 'credit' => {
-          'account_id' => 2,
-        }
+        },
+        'debit_account_id' => 1,
+        'credit_account_id' => 2
       }
     end
 
     describe '#record' do
       context 'with a valid transfer' do
-        it 'successfully saves the transfer in the DB', :aggregate_failures do
+        it 'successfully saves the transfer in the DB' do
           result = ledger.record(transfer)
 
           expect(result).to be_success
@@ -35,7 +32,19 @@ module FinanceTracker
           )]
         end
       end
+      context 'when the transfer lacks an account_id' do
+        it 'rejects the tranfer as invalid' do
+          transfer.delete('debit_account_id')
 
+          result = ledger.record(transfer)
+
+          expect(result).not_to be_success
+          expect(result.transfer_ids).to eq(nil)
+          expect(result.error_message).to include('`payee` is required')
+
+          expect(DB[:transfers].count).to eq(0)
+        end
+      end
     end
   end
 end

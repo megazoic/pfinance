@@ -23,9 +23,9 @@ Sequel.migration do
             Integer :direction, null: false
             Integer :amount, null: false
             Date :date, null: false
-            foreign_key :category_id, :categories
-            foreign_key :account_id, :accounts
-            foreign_key :user_id, :users
+            foreign_key :category_id, :categories, null: false
+            foreign_key :account_id, :accounts, null: false
+            foreign_key :user_id, :users, null: false
       end
     end
   end
