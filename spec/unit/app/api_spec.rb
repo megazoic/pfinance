@@ -19,7 +19,7 @@ module FinanceTracker
                 it 'returns the transfer id' do
                     post '/transfers', JSON.generate(transfer)
                     parsed = JSON.parse(last_response.body)
-                    expect(parsed).to include('transfer_id' => 417)
+                    expect(parsed).to include('transfer_ids' => 417)
                 end
                 it 'responds with a 200 (OK)' do
                     post '/transfers', JSON.generate(transfer)

@@ -2,6 +2,7 @@ require 'rack/test'
 require 'json'
 require_relative '../../app/api'
 
+
 module FinanceTracker
     RSpec.describe 'Finance Tracker API', :db do
         include Rack::Test::Methods
@@ -12,52 +13,38 @@ module FinanceTracker
             post '/transfers', JSON.generate(transfer)
             expect(last_response.status).to eq(200)
             parsed = JSON.parse(last_response.body)
-            puts "parsed is #{parsed['transfer_id']}"
-            expect(parsed).to include('transfer_id' => a_kind_of(Integer))
-            transfer.merge('id' => parsed['transfer_id'])
+            expect(parsed["transfer_ids"]).to include("debit_record_id" => a_kind_of(Integer))
+            transfer.merge(parsed['transfer_ids'])
          end
-        it 'records submitted tranfer' do
-            pending 'Need to persist transfers'
-            JanTransfer = post_transfer('shared' => {
-                'date' => '2024-01-23',
-                'amount' => 14000,
-                'userId' => 1,
-                'catId' => 1
-            }, 'debit' => {
-                'accountId' => 1,
-                'direction' => 1
-            }, 'credit' => {
-                'accountId' => 2,
-                'direction' => -1
-            })
+        it 'records submitted transfer' do
             FebTransfer = post_transfer('shared' => {
-                'date' => '2024-02-21',
-                'amount' => 13400,
-                'userId' => 1,
-                'catId' => 2
-            }, 'debit' => {
-                'accountId' => 1,
-                'direction' => 1
-            }, 'credit' => {
-                'accountId' => 2,
-                'direction' => -1
-            })
+                'posted_date' => '2024-04-23',
+                'amount' => 14000,
+                'user_id' => 1,
+                'category_id' => 1
+                }, 'debit_account_id' => 1,
+                'credit_account_id' => 2
+            )
+            JanTransfer = post_transfer('shared' => {
+                'posted_date' => '2024-01-23',
+                'amount' => 14000,
+                'user_id' => 1,
+                'category_id' => 1
+                }, 'debit_account_id' => 1,
+                'credit_account_id' => 2
+            )
             MarTransfer = post_transfer('shared' => {
-                'date' => '2024-03-13',
-                'amount' => 1400,
-                'userId' => 1,
-                'catId' => 3
-            }, 'debit' => {
-                'accountId' => 1,
-                'direction' => 1
-            }, 'credit' => {
-                'accountId' => 2,
-                'direction' => -1
-            })
-            get '/transfers/2024-02-21'
+                'posted_date' => '2024-02-23',
+                'amount' => 14000,
+                'user_id' => 1,
+                'category_id' => 1
+                }, 'debit_account_id' => 1,
+                'credit_account_id' => 2
+            )
+            get '/transfers/2024-04-23'
             expect(last_response.status).to eq(200)
             transfers = JSON.parse(last_response.body)
-            expect(transfers).to contain_exactly(FebTransfer)
+            expect(transfers.values).to contain_exactly(FebTransfer)
         end
     end
 end

@@ -9,17 +9,19 @@ module FinanceTracker
             super()
         end
         post '/transfers' do
-            transfer = JSON.parse(request.body.string)
+            transfer = JSON.parse(request.body.read)
             result = @ledger.record(transfer)
             if result.success?
-                JSON.generate('transfer_id' => result.transfer_id)
+                JSON.generate('transfer_ids' => result.transfer_ids)
             else
                 status 422
                 JSON.generate('error' => result.error_message)
             end
         end
         get '/transfers/:date' do
-            JSON.generate([])
+            puts "in GET /transfers/:date and date is #{params[:date]}"
+            result = @ledger.transfers_on(params[:date])
+            JSON.generate(result)
         end
     end
 end    

@@ -1,8 +1,15 @@
 require 'date'
+require 'json'
+require_relative '../config/sequel'
 
 module FinanceTracker
     RecordResult = Struct.new(:success?, :transfer_ids, :error_message)
-  
+    class ::Hash
+        def deep_merge(second)
+            merger = proc { |key, v1, v2| Hash === v1 && Hash === v2 ? v1.merge(v2, &merger) : v2 }
+            self.merge(second, &merger)
+        end
+    end
     class Ledger
         def record(transfer)
             # validate data
@@ -14,7 +21,7 @@ module FinanceTracker
             t_date_array = transfer['shared']['posted_date'].split("-")
             dt = DateTime.new(t_date_array[0].to_i, t_date_array[1].to_i,
                 t_date_array[2].to_i)
-            transfer_id = get_transfer_id(dt)
+            transfer_id = get_transfer_id(dt.to_date)
             record_ids = Hash.new
             DB.transaction do
                 transfer_records =  DB[:transfers]
@@ -41,21 +48,26 @@ module FinanceTracker
                     category_id: transfer['shared']['category_id']
                 )
             end
-            RecordResult.new(true, {"debit" => record_ids["debit"], "credit" => record_ids["credit"]}, nil)
+            RecordResult.new(true, {"debit_record_id" => record_ids["debit"], "credit_record_id" => record_ids["credit"]}, nil)
         end
         def get_transfer_id(dt)
-            #first, look for unique transfer_id
+            #first, look for transaction transfer_id
             transfer_records =  DB[:transfers]
-            transfers_on_same_posted_date = transfer_records.where{posted_date =~ dt.to_date}
+            transfers_on_same_posted_date = transfer_records.where(posted_date: dt).all
             temp_transfer_id = 0
-            !transfers_on_same_posted_date.empty? do
+            unless transfers_on_same_posted_date.empty?
                 transfers_on_same_posted_date.each do |t|
-                    temp_transfer_id > t.transfer_id ? break : temp_transfer_id = t + 1
+                    if temp_transfer_id > t[:transfer_id]
+                        break
+                    else
+                        temp_transfer_id = t[:transfer_id] + 1
+                    end
                 end
             end
             temp_transfer_id
         end
         def validate_transfer(transfer)
+            puts "transfer is #{transfer}"
             # are ids valid?
             is_valid = {"user" => 0, "category" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
@@ -78,7 +90,49 @@ module FinanceTracker
             
             transfer["shared"]["amount"] > 0 ? is_valid["amount"] = 1 : false
             # test if any keys still have a false value
+            puts "finished validating and is_valid is #{is_valid}"
             !is_valid.value?(0)
+        end
+        def transfers_on(date)
+            t_date_array = date.split("-")
+            dt = DateTime.new(t_date_array[0].to_i, t_date_array[1].to_i,
+            t_date_array[2].to_i)
+            #expecting two ids per transaction and want to pacakage accordingly
+            result_array = DB[:transfers].where(posted_date: dt.to_date).all
+            group_transfers(result_array)
+        end
+        def group_transfers(transfers_array)
+            transfer_record_complete = false
+            transfer_hash = Hash.new
+            count = 0
+            transfers_array.each do |transfer_record|
+                transaction_id = "#{transfer_record[:posted_date].to_s}_#{transfer_record[:transfer_id]}"
+                if transfer_hash.has_key?(transaction_id)
+                    if transfer_record[:direction] == 1
+                        transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
+                        transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
+                    else
+                        transfer_hash[transaction_id]["debit_account_id"] = transfer_record[:account_id]
+                        transfer_hash[transaction_id]["debit_record_id"] = transfer_record[:id]
+                    end
+                else
+                    #starting with a new hash
+                    transfer_hash[transaction_id] = {"shared" => {}, "credit_account_id" => nil, "debit_account_id" => nil,
+                    "credit_record_id" => nil, "debit_record_id" => nil}
+                    shared_hash = {"posted_date" => transfer_record[:posted_date], "amount" => transfer_record[:amount],
+                        "user_id" => transfer_record[:user_id], "category_id" => transfer_record[:category_id]}
+                    transfer_hash[transaction_id]["shared"] = shared_hash
+                    if transfer_record[:direction] == 1
+                        transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
+                        transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
+                    else
+                        transfer_hash[transaction_id]["debit_account_id"] = transfer_record[:account_id]
+                        transfer_hash[transaction_id]["debit_record_id"] = transfer_record[:id]
+                    end
+                end
+                count = count +1
+            end
+            transfer_hash
         end
     end
 end
