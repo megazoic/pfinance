@@ -1,6 +1,10 @@
 require 'sinatra/base'
 require 'json'
 require_relative 'ledger'
+require './app/models/account'
+require './app/models/category'
+require './app/models/transfer'
+require './app/models/user'
 
 module FinanceTracker
     class API < Sinatra::Base
@@ -9,6 +13,7 @@ module FinanceTracker
             super()
         end
         post '/transfers' do
+            request.body.rewind
             transfer = JSON.parse(request.body.read)
             result = @ledger.record(transfer)
             if result.success?

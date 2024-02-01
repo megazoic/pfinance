@@ -46,5 +46,8 @@ module FinanceTracker
             transfers = JSON.parse(last_response.body)
             expect(transfers.values).to contain_exactly(FebTransfer)
         end
+        it 'updates transfer' do
+            pending 'updates not implemented yet'
+        end
     end
 end

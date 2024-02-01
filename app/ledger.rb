@@ -67,7 +67,6 @@ module FinanceTracker
             temp_transfer_id
         end
         def validate_transfer(transfer)
-            puts "transfer is #{transfer}"
             # are ids valid?
             is_valid = {"user" => 0, "category" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
@@ -90,7 +89,6 @@ module FinanceTracker
             
             transfer["shared"]["amount"] > 0 ? is_valid["amount"] = 1 : false
             # test if any keys still have a false value
-            puts "finished validating and is_valid is #{is_valid}"
             !is_valid.value?(0)
         end
         def transfers_on(date)
