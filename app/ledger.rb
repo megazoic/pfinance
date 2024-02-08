@@ -70,9 +70,9 @@ module FinanceTracker
             # are ids valid?
             is_valid = {"user" => 0, "category" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
-            user_ids = DB[:users].map(:user_id)
-            category_ids = DB[:categories].map(:category_id)
-            account_ids = DB[:accounts].map(:account_id)
+            user_ids = DB[:users].map(:id)
+            category_ids = DB[:categories].map(:id)
+            account_ids = DB[:accounts].map(:id)
             user_ids.include?(transfer["shared"]["user_id"]) ? is_valid["user"] = 1 : false
             category_ids.include?(transfer["shared"]["category_id"]) ? is_valid["category"] = 1 : false
             account_ids.include?(transfer["debit_account_id"]) ? is_valid["debit_account"] = 1 : false
