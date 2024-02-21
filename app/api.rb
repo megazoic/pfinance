@@ -13,6 +13,9 @@ module FinanceTracker
             super()
         end
         post '/transfers' do
+            #curl -i -X POST -H "Content-Type: application/json" -d "{\"shared\":{\"posted_date\":\"2024-02-23\",
+            #\"amount\":14000,\"user_id\":1,\"category_id\":1},\"debit_account_id\":1,
+            #\"credit_account_id\":2}"  http://localhost:9292/transfers
             request.body.rewind
             transfer = JSON.parse(request.body.read)
             result = @ledger.record(transfer)
@@ -24,7 +27,6 @@ module FinanceTracker
             end
         end
         get '/transfers/:date' do
-            puts "in GET /transfers/:date and date is #{params[:date]}"
             result = @ledger.transfers_on(params[:date])
             JSON.generate(result)
         end
