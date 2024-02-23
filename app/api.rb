@@ -5,10 +5,12 @@ require './app/models/account'
 require './app/models/category'
 require './app/models/transfer'
 require './app/models/user'
+require_relative 'augmenter'
 
 module FinanceTracker
     class API < Sinatra::Base
-        def initialize(ledger: Ledger.new)
+        def initialize(ledger: Ledger.new, augmenter: Augmenter.new)
+            @augmenter = augmenter
             @ledger = ledger
             super()
         end
@@ -31,7 +33,14 @@ module FinanceTracker
             JSON.generate(result)
         end
         post '/accounts' do
-            JSON.generate('account_id' => 42)
+            account = JSON.parse(request.body.string)
+            result = @augmenter.record(account)
+            if result.success?
+                JSON.generate('id' => result.id)
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
         end
         get '/accounts/normal/:value' do
             JSON.generate([])

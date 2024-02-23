@@ -109,7 +109,7 @@ module FinanceTracker
             post '/accounts'
             expect(last_response.status).to eq(200)
             accounts = JSON.parse(last_response.body)
-            expect(accounts).to include('account_id' => a_kind_of(Integer))
+            expect(accounts).to include('id' => a_kind_of(Integer))
         end
     end
 end
