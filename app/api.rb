@@ -30,5 +30,14 @@ module FinanceTracker
             result = @ledger.transfers_on(params[:date])
             JSON.generate(result)
         end
+        post '/accounts' do
+            JSON.generate('account_id' => 42)
+        end
+        get '/accounts/normal/:value' do
+            JSON.generate([])
+        end
+        get '/accounts' do
+            JSON.generate([])
+        end
     end
 end    

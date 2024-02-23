@@ -2,6 +2,7 @@ require_relative '../config/sequel'
 
 module FinanceTracker
     ImportResult = Struct.new(:success?, :import_id, :error_message)
+    RakeResult = Struct.new(:success?, :records_in_file, :records_imported, :error_message)
     class RecordImporter
         def import_record(record_to_import)
             #puts "record to import is #{record_to_import}"
@@ -37,5 +38,29 @@ module FinanceTracker
             # test if any keys still have a false value
             !is_valid.value?(0)  
         end
+        def log_error(erroneous_record, error, error_count)
+            import_logs =  DB[:import_logs]
+            if error_count > 1
+              import_logs.insert(
+                date: Date.today,
+                record: erroneous_record,
+                error: error,
+                description: "exceeded two errors, processing halted"
+              )
+            else
+              import_logs.insert(
+                date: Date.today,
+                record: erroneous_record,
+                error: error
+              )
+            end
+        end
+        def log_import_results(description)
+            import_logs =  DB[:import_logs]
+            import_logs.insert(
+                date: Date.today,
+                description: description
+            )
+        end      
     end
 end

@@ -16,6 +16,13 @@ module FinanceTracker
             expect(parsed["transfer_ids"]).to include("debit_record_id" => a_kind_of(Integer))
             transfer.merge(parsed['transfer_ids'])
          end
+         def post_account(account)
+            post '/accounts', JSON.generate(account)
+            expect(last_response.status).to eq(200)
+            parsed = JSON.parse(last_response.body)
+            expect(parsed).to include("account_id" => a_kind_of(Integer))
+            account.merge('id' => parsed['account_id'])
+         end
         it 'records submitted transfer' do
             FebTransfer = post_transfer('shared' => {
                 'posted_date' => '2024-04-23',
@@ -48,6 +55,61 @@ module FinanceTracker
         end
         it 'updates transfer' do
             pending 'updates not implemented yet'
+        end
+        it 'retrieves accounts with specific normal value' do
+            pending 'Need to persist accounts'
+            new_account1 = post_account(
+                'name' => 'house',
+                'normal' => '1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            new_account2 = post_account(
+                'name' => 'house',
+                'normal' => '-1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            new_account3 = post_account(
+                'name' => 'house',
+                'normal' => '1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            get '/accounts/normal/-1'
+            expect(last_response.status).to eq(200)
+            accounts = JSON.parse(last_response.body)
+            expect(accounts).to contain_exactly(new_account2)
+        end
+        it 'retrieves all accounts' do
+            pending 'Need to persist accounts'
+            new_account1 = post_account(
+                'name' => 'house',
+                'normal' => '1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            new_account2 = post_account(
+                'name' => 'house',
+                'normal' => '-1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            new_account3 = post_account(
+                'name' => 'house',
+                'normal' => '1',
+                'description' => 'from which we pay bills to which salary added'
+            )
+            get '/accounts'
+            expect(last_response.status).to eq(200)
+            accounts = JSON.parse(last_response.body)
+            expect(accounts).to contain_exactly(new_account1,new_account2,new_account3)
+        end
+        it 'creates new account' do
+            new_account = {
+                'name' => 'house',
+                'normal' => '1',
+                'description' => 'from which we pay bills to which salary added'
+            }
+            post '/accounts'
+            expect(last_response.status).to eq(200)
+            accounts = JSON.parse(last_response.body)
+            expect(accounts).to include('account_id' => a_kind_of(Integer))
         end
     end
 end

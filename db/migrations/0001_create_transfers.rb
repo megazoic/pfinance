@@ -15,7 +15,6 @@ Sequel.migration do
             primary_key :id
             String :name, null: false
             String :description
-            #foreign_key :parent_id, :categories
         end
         create_table :hierarchy do
             primary_key :id
