@@ -2,6 +2,14 @@ require_relative '../../../app/ledger'
 
 module FinanceTracker
   RSpec.describe Ledger, :aggregate_failures, :db do
+    before(:example) do
+            # set up for testing transfers table
+            DB[:users].insert(id: 1, name: "Nick")
+            DB[:accounts].insert(id: 1, name: "House", normal: 1)
+            DB[:accounts].insert(id: 2, name: "Vacation", normal: 1)
+            DB[:categories].insert(id: 1, name: "Discretionary")
+    end
+
     let(:ledger) { Ledger.new }
     let(:transfer) do
       {

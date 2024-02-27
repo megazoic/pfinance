@@ -34,7 +34,7 @@ module FinanceTracker
         end
         post '/accounts' do
             account = JSON.parse(request.body.string)
-            result = @augmenter.record(account)
+            result = @augmenter.create(account, :accounts)
             if result.success?
                 JSON.generate('id' => result.id)
             else
@@ -42,11 +42,17 @@ module FinanceTracker
                 JSON.generate('error' => result.error_message)
             end
         end
+        get '/accounts/user_id/:value' do
+            result = @augmenter.get_accounts_w_user_id(params[:value])
+            JSON.generate([result])
+        end
         get '/accounts/normal/:value' do
-            JSON.generate([])
+            result = @augmenter.get_accounts_w_normal(params[:value])
+            JSON.generate([result])
         end
         get '/accounts' do
-            JSON.generate([])
+            result = @augmenter.get_records(:accounts)
+            JSON.generate([result])
         end
     end
 end    

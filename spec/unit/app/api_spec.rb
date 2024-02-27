@@ -53,8 +53,8 @@ module FinanceTracker
             context 'when the account is successfully recorded' do
                 let(:account) {{'some' => 'data'}}
                 before do
-                    allow(augmenter).to receive(:record)
-                    .with(account)
+                    allow(augmenter).to receive(:create)
+                    .with(account, :accounts)
                     .and_return(AugmentResult.new(true, 32, nil))
                 end
                 it 'returns account id' do
@@ -70,8 +70,8 @@ module FinanceTracker
             context 'when the account fails validation' do
                 let(:account) {{'some' => 'data'}}
                 before do
-                    allow(augmenter).to receive(:record)
-                    .with(account)
+                    allow(augmenter).to receive(:create)
+                    .with(account, :accounts)
                     .and_return(AugmentResult.new(false, 32, 'Account incomplete'))
                 end
                 it 'returns an error message' do
@@ -82,6 +82,38 @@ module FinanceTracker
                 it 'responds with a 422 (Unprocessable entity)' do
                     post '/accounts', JSON.generate(account)
                     expect(last_response.status).to eq(422)
+                end
+            end
+        end
+        describe 'GET /accounts/:normal' do
+            context 'when accounts exist with a specific normal' do
+                before do
+                    return_value = ['account_2']
+                    allow(augmenter).to receive(:get_accounts_w_normal)
+                    .with('-1')
+                    .and_return(*return_value)
+                end
+                it 'returns a list of accounts as JSON' do
+                    get '/accounts/normal/-1'
+                    parsed = JSON.parse(last_response.body)
+                    expect(parsed).to eq(['account_2'])
+                end
+                it 'responds with a 200 (OK)' do
+                    get '/accounts/normal/-1'
+                    expect(last_response.status).to eq(200)
+                end
+            end
+            context 'when accounts exist with a specific user_id' do
+                before do
+                    return_value = ['account_2']
+                    allow(augmenter).to receive(:get_accounts_w_user_id)
+                    .with('2')
+                    .and_return(*return_value)
+                end
+                it 'returns a list of accounts as JSON' do
+                    get '/accounts/user_id/2'
+                    parsed = JSON.parse(last_response.body)
+                    expect(parsed).to eq(['account_2'])
                 end
             end
         end
