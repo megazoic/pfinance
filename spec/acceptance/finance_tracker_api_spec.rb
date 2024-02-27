@@ -101,7 +101,7 @@ module FinanceTracker
                 expect(last_response.status).to eq(200)
                 accounts = JSON.parse(last_response.body)
                 clean_accounts = []
-                accounts[0].each do |account|
+                accounts.each do |account|
                     clean_accounts << account.reject!{|k,v| k == "user_id"}
                 end
                 expect(clean_accounts).to contain_exactly(new_account2)
@@ -126,7 +126,7 @@ module FinanceTracker
                 expect(last_response.status).to eq(200)
                 accounts = JSON.parse(last_response.body)
                 clean_accounts = []
-                accounts[0].each do |account|
+                accounts.each do |account|
                     clean_accounts << account.reject!{|k,v| k == "user_id"}
                 end
                 expect(clean_accounts).to contain_exactly(new_account1,new_account2,new_account3)

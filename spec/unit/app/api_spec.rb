@@ -88,7 +88,7 @@ module FinanceTracker
         describe 'GET /accounts/:normal' do
             context 'when accounts exist with a specific normal' do
                 before do
-                    return_value = ['account_2']
+                    return_value = 'account_2'
                     allow(augmenter).to receive(:get_accounts_w_normal)
                     .with('-1')
                     .and_return(*return_value)
@@ -96,7 +96,7 @@ module FinanceTracker
                 it 'returns a list of accounts as JSON' do
                     get '/accounts/normal/-1'
                     parsed = JSON.parse(last_response.body)
-                    expect(parsed).to eq(['account_2'])
+                    expect(parsed).to eq('account_2')
                 end
                 it 'responds with a 200 (OK)' do
                     get '/accounts/normal/-1'
@@ -105,7 +105,7 @@ module FinanceTracker
             end
             context 'when accounts exist with a specific user_id' do
                 before do
-                    return_value = ['account_2']
+                    return_value = 'account_2'
                     allow(augmenter).to receive(:get_accounts_w_user_id)
                     .with('2')
                     .and_return(*return_value)
@@ -113,7 +113,7 @@ module FinanceTracker
                 it 'returns a list of accounts as JSON' do
                     get '/accounts/user_id/2'
                     parsed = JSON.parse(last_response.body)
-                    expect(parsed).to eq(['account_2'])
+                    expect(parsed).to eq('account_2')
                 end
             end
         end

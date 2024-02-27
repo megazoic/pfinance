@@ -1,4 +1,5 @@
 require 'sinatra/base'
+require 'sinatra/cross_origin'
 require 'json'
 require_relative 'ledger'
 require './app/models/account'
@@ -9,6 +10,12 @@ require_relative 'augmenter'
 
 module FinanceTracker
     class API < Sinatra::Base
+        configure do
+            enable :cross_origin
+        end
+        before do
+            response.headers['Access-Control-Allow-Origin'] = 'http://localhost'
+        end
         def initialize(ledger: Ledger.new, augmenter: Augmenter.new)
             @augmenter = augmenter
             @ledger = ledger
@@ -44,15 +51,15 @@ module FinanceTracker
         end
         get '/accounts/user_id/:value' do
             result = @augmenter.get_accounts_w_user_id(params[:value])
-            JSON.generate([result])
+            JSON.generate(result)
         end
         get '/accounts/normal/:value' do
             result = @augmenter.get_accounts_w_normal(params[:value])
-            JSON.generate([result])
+            JSON.generate(result)
         end
         get '/accounts' do
             result = @augmenter.get_records(:accounts)
-            JSON.generate([result])
+            JSON.generate(result)
         end
     end
 end    
