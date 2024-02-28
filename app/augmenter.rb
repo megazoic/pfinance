@@ -5,16 +5,35 @@ module FinanceTracker
             id = DB[table.to_sym].insert(obj_to_record)
             AugmentResult.new(true, id, nil)
         end
-        def update(obj_to_record, table, id)
-            DB[table.to_sym].where(id: id).update(obj_to_record)
-            AugmentResult.new(true, id, nil)
+        def update(obj_to_update, table)
+            account_id = obj_to_update[:id]
+            obj_to_update.delete(:id)
+            DB[table.to_sym].where(id: account_id).update(obj_to_update)
+            AugmentResult.new(true, account_id, nil)
         end
-        def get_records(table)
-            records = DB[table.to_sym].all
+        def get_records(table, account_id = nil)
+            #records = DB[table.to_sym].all
             if table == :accounts
-                records.each do |record|
-                    user = DB[:users].where(id: record[:user_id]).first
-                    record[:user_name] = user[:name]
+                if account_id.nil?
+                    #we are getting all records
+                    records = DB[:accounts].all
+                    records.each do |record|
+                        if record[:user_id].nil?
+                            record[:user_name] = "N/A"
+                        else
+                            user_name = DB[:users].where(id: record[:user_id]).first[:name]
+                            record[:user_name] = user_name
+                        end
+                    end
+                else
+                    record = DB[:accounts].where(id: account_id).first
+                    if record[:user_id].nil?
+                        record[:user_name] = "N/A"
+                    else
+                        user_name = DB[:users].where(id: record[:user_id]).first[:name]
+                        record[:user_name] = user_name
+                    end
+                    records = [record]
                 end
             end
         end

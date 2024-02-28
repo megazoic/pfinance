@@ -127,7 +127,7 @@ module FinanceTracker
                 accounts = JSON.parse(last_response.body)
                 clean_accounts = []
                 accounts.each do |account|
-                    clean_accounts << account.reject!{|k,v| k == "user_id"}
+                    clean_accounts << account.reject!{|k,v| ["user_id","user_name"].include? k}
                 end
                 expect(clean_accounts).to contain_exactly(new_account1,new_account2,new_account3)
             end
@@ -141,7 +141,23 @@ module FinanceTracker
                 expect(last_response.status).to eq(200)
                 accounts = JSON.parse(last_response.body)
                 expect(accounts).to include('id' => a_kind_of(Integer))
-            end    
+            end
+            context 'when updating an account' do
+                before(:example) do
+                    # set up for testing accounts table
+                    DB[:users].insert(id: 1, name: "Nick")
+                    DB[:accounts].insert(id: 1, name: "account1", normal: 1, user_id: 1)
+                end
+                it 'updates account' do
+                    post '/accounts/1', JSON.generate('name' => 'account2')
+                    expect(last_response.status).to eq(200)
+                    get '/accounts/1'
+                    expect(last_response.status).to eq(200)
+                    account = JSON.parse(last_response.body)
+                    puts "account: #{account}"
+                    expect(*account).to include('name' => 'account2')
+                end
+            end
         end
     end
 end

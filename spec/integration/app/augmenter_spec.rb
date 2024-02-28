@@ -36,8 +36,9 @@ module FinanceTracker
                 it 'successfully updates the account' do
                     result = augmenter.create(account, :accounts)
                     updated_account = DB[:accounts].where(id: result.id).first
-                    updated_account[:normal] = -1 
-                    updated_result = augmenter.update(updated_account, :accounts, result.id)
+                    updated_account[:normal] = -1
+                    updated_result = augmenter.update(updated_account, :accounts)
+                    puts "updated_result: #{updated_result}"
                     expect(updated_result).to be_success
                     expect(DB[:accounts].where(id: updated_result.id).first).to include ({normal: -1})
                 end

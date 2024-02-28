@@ -49,6 +49,17 @@ module FinanceTracker
                 JSON.generate('error' => result.error_message)
             end
         end
+        post '/accounts/:id' do
+            account = JSON.parse(request.body.string)
+            account[:id] = params[:id]
+            result = @augmenter.update(account, :accounts)
+            if result.success?
+                JSON.generate('id' => result.id)
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
+        end
         get '/accounts/user_id/:value' do
             result = @augmenter.get_accounts_w_user_id(params[:value])
             JSON.generate(result)
@@ -59,6 +70,10 @@ module FinanceTracker
         end
         get '/accounts' do
             result = @augmenter.get_records(:accounts)
+            JSON.generate(result)
+        end
+        get '/accounts/:id' do
+            result = @augmenter.get_records(:accounts, params[:id])
             JSON.generate(result)
         end
     end
