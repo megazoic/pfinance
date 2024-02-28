@@ -53,15 +53,22 @@ module FinanceTracker
                     account['name'] = "new name"
                     augmenter.create(account, :accounts)
                     account['name'] = "new 2 name"
+                    account['user_id'] = 2
                     augmenter.create(account, :accounts)
                     all_records = augmenter.get_records(:accounts)
                     record_names = []
+                    record_user_names = []
                     all_records.each do |record|
                         record_names << record[:name]
+                        record_user_names << record[:user_name]
                     end
                     expected_names = ["brokerage", "new name", "new 2 name"]
+                    expected_user_names = ["Nick", "Nick", "Irma"]
                     expect(record_names).to contain_exactly(
                         *expected_names
+                    )
+                    expect(record_user_names).to contain_exactly(
+                        *expected_user_names
                     )
                 end
                 it 'successfully retrieves accounts with specific normal value' do

@@ -11,6 +11,12 @@ module FinanceTracker
         end
         def get_records(table)
             records = DB[table.to_sym].all
+            if table == :accounts
+                records.each do |record|
+                    user = DB[:users].where(id: record[:user_id]).first
+                    record[:user_name] = user[:name]
+                end
+            end
         end
         def get_accounts_w_normal(normal)
             records = DB[:accounts].where(normal: normal).all
