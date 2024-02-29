@@ -11,10 +11,10 @@ module FinanceTracker
             DB[table.to_sym].where(id: account_id).update(obj_to_update)
             AugmentResult.new(true, account_id, nil)
         end
-        def get_records(table, account_id = nil)
+        def get_records(table, record_id = nil)
             #records = DB[table.to_sym].all
             if table == :accounts
-                if account_id.nil?
+                if record_id.nil?
                     #we are getting all records
                     records = DB[:accounts].all
                     records.each do |record|
@@ -26,7 +26,7 @@ module FinanceTracker
                         end
                     end
                 else
-                    record = DB[:accounts].where(id: account_id).first
+                    record = DB[:accounts].where(id: record_id).first
                     if record[:user_id].nil?
                         record[:user_name] = "N/A"
                     else
@@ -34,6 +34,12 @@ module FinanceTracker
                         record[:user_name] = user_name
                     end
                     records = [record]
+                end
+            elsif table == :users
+                if record_id.nil?
+                    records = DB[:users].all
+                else
+                    records = DB[:users].where(id: record_id).all
                 end
             end
         end

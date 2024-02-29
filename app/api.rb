@@ -40,7 +40,7 @@ module FinanceTracker
             JSON.generate(result)
         end
         post '/accounts' do
-            account = JSON.parse(request.body.string)
+            account = JSON.parse(request.body.read)
             result = @augmenter.create(account, :accounts)
             if result.success?
                 JSON.generate('id' => result.id)
@@ -50,7 +50,8 @@ module FinanceTracker
             end
         end
         post '/accounts/:id' do
-            account = JSON.parse(request.body.string)
+            #was account = JSON.parse(request.body.string) but lint error no method string
+            account = JSON.parse(request.body.read)
             account[:id] = params[:id]
             result = @augmenter.update(account, :accounts)
             if result.success?
@@ -74,6 +75,35 @@ module FinanceTracker
         end
         get '/accounts/:id' do
             result = @augmenter.get_records(:accounts, params[:id])
+            JSON.generate(result)
+        end
+        post '/users' do
+            user = JSON.parse(request.body.read)
+            result = @augmenter.create(user, :users)
+            if result.success?
+                JSON.generate('id' => result.id)
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
+        end
+        post '/users/:id' do
+            user = JSON.parse(request.body.read)
+            user[:id] = params[:id]
+            result = @augmenter.update(user, :users)
+            if result.success?
+                JSON.generate('id' => result.id)
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
+        end
+        get '/users' do
+            result = @augmenter.get_records(:users)
+            JSON.generate(result)
+        end
+        get '/users/:id' do
+            result = @augmenter.get_records(:users, params[:id])
             JSON.generate(result)
         end
     end

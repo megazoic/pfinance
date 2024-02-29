@@ -117,5 +117,54 @@ module FinanceTracker
                 end
             end
         end
+        describe 'GET /users' do
+            before do
+                return_value = 'users'
+                allow(augmenter).to receive(:get_records)
+                .with(:users)
+                .and_return(*return_value)
+            end
+            it 'returns a list of users as JSON' do
+                get '/users'
+                parsed = JSON.parse(last_response.body)
+                expect(parsed).to eq('users')
+            end
+        end
+        describe 'POST /users' do
+            context 'when the user is successfully recorded' do
+                let(:user) {{'some' => 'data'}}
+                before do
+                    allow(augmenter).to receive(:create)
+                    .with(user, :users)
+                    .and_return(AugmentResult.new(true, 32, nil))
+                end
+                it 'returns user id' do
+                    post '/users', JSON.generate(user)
+                    parsed = JSON.parse(last_response.body)
+                    expect(parsed).to include('id' => 32)
+                end
+                it 'responds with a 200 (OK)' do
+                    post '/users', JSON.generate(user)
+                    expect(last_response.status).to eq(200)
+                end
+            end
+            context 'when the user fails validation' do
+                let(:user) {{'some' => 'data'}}
+                before do
+                    allow(augmenter).to receive(:create)
+                    .with(user, :users)
+                    .and_return(AugmentResult.new(false, 32, 'User incomplete'))
+                end
+                it 'returns an error message' do
+                    post '/users', JSON.generate(user)
+                    parsed = JSON.parse(last_response.body)
+                    expect(parsed).to include('error' => 'User incomplete')
+                end
+                it 'responds with a 422 (Unprocessable entity)' do
+                    post '/users', JSON.generate(user)
+                    expect(last_response.status).to eq(422)
+                end
+            end
+        end
     end
 end

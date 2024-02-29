@@ -24,6 +24,13 @@ module FinanceTracker
             expect(parsed).to include("id" => a_kind_of(Integer))
             account.merge('id' => parsed['id'])
         end
+        def post_user(user)
+            post '/users', JSON.generate(user)
+            expect(last_response.status).to eq(200)
+            parsed = JSON.parse(last_response.body)
+            expect(parsed).to include("id" => a_kind_of(Integer))
+            user.merge('id' => parsed['id'])
+        end
         context 'when testing transfers' do
             before(:example) do
                 # set up for testing transfers table
@@ -154,9 +161,43 @@ module FinanceTracker
                     get '/accounts/1'
                     expect(last_response.status).to eq(200)
                     account = JSON.parse(last_response.body)
-                    puts "account: #{account}"
                     expect(*account).to include('name' => 'account2')
                 end
+            end
+        end
+        context 'when testing users' do
+            it 'retrieves all users' do
+                new_user1 = post_user('name' => 'Nick')
+                new_user2 = post_user('name' => 'Nick2')
+                get '/users'
+                expect(last_response.status).to eq(200)
+                users = JSON.parse(last_response.body)
+                expect(users).to contain_exactly(new_user1,new_user2)
+            end
+            it 'retrieves specific user' do
+                new_user1 = post_user('name' => 'Nick')
+                get "/users/#{new_user1['id']}"
+                expect(last_response.status).to eq(200)
+                user = JSON.parse(last_response.body)
+                expect(*user).to eq(new_user1)
+            end
+            it 'creates new user' do
+                new_user = {
+                    'name' => 'Nick'
+                }
+                post_user(new_user)
+                expect(last_response.status).to eq(200)
+                user = JSON.parse(last_response.body)
+                expect(user).to include('id' => a_kind_of(Integer))
+            end
+            it 'updates user' do
+                new_user = post_user('name' => 'Nick')
+                post "/users/#{new_user['id']}", JSON.generate('name' => 'Nick2')
+                expect(last_response.status).to eq(200)
+                get "/users/#{new_user['id']}"
+                expect(last_response.status).to eq(200)
+                user = JSON.parse(last_response.body)
+                expect(*user).to include('name' => 'Nick2')
             end
         end
     end

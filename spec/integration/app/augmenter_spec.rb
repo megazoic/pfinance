@@ -93,6 +93,16 @@ module FinanceTracker
                     expect(records_w_name.length).to eq(2)
                 end
             end
+            context 'for users' do  
+                it 'successfully retrieves all users' do
+                    all_users = augmenter.get_records(:users)
+                    user_names = []
+                    all_users.each do |user|
+                        user_names << user[:name]
+                    end
+                    expect(user_names).to contain_exactly("Nick", "Irma")
+                end
+            end
         end
     end
 end
