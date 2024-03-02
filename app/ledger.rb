@@ -34,7 +34,6 @@ module FinanceTracker
                     amount: transfer['shared']['amount'],
                     user_id: transfer['shared']['user_id'],
                     account_id: transfer['debit_account_id'],
-                    category_id: transfer['shared']['category_id']
                 )
                 # for credit side
                 record_ids["credit"] = transfer_records.insert(
@@ -45,7 +44,6 @@ module FinanceTracker
                     amount: transfer['shared']['amount'],
                     user_id: transfer['shared']['user_id'],
                     account_id: transfer['credit_account_id'],
-                    category_id: transfer['shared']['category_id']
                 )
             end
             RecordResult.new(true, {"debit_record_id" => record_ids["debit"], "credit_record_id" => record_ids["credit"]}, nil)
@@ -68,13 +66,11 @@ module FinanceTracker
         end
         def validate_transfer(transfer)
             # are ids valid?
-            is_valid = {"user" => 0, "category" => 0, "debit_account" => 0, "date" => 0,
+            is_valid = {"user" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
             user_ids = DB[:users].map(:id)
-            category_ids = DB[:categories].map(:id)
             account_ids = DB[:accounts].map(:id)
             user_ids.include?(transfer["shared"]["user_id"]) ? is_valid["user"] = 1 : false
-            category_ids.include?(transfer["shared"]["category_id"]) ? is_valid["category"] = 1 : false
             account_ids.include?(transfer["debit_account_id"]) ? is_valid["debit_account"] = 1 : false
             account_ids.include?(transfer["credit_account_id"]) ? is_valid["credit_account"] = 1 : false
 
@@ -118,7 +114,7 @@ module FinanceTracker
                     transfer_hash[transaction_id] = {"shared" => {}, "credit_account_id" => nil, "debit_account_id" => nil,
                     "credit_record_id" => nil, "debit_record_id" => nil}
                     shared_hash = {"posted_date" => transfer_record[:posted_date], "amount" => transfer_record[:amount],
-                        "user_id" => transfer_record[:user_id], "category_id" => transfer_record[:category_id]}
+                        "user_id" => transfer_record[:user_id]}
                     transfer_hash[transaction_id]["shared"] = shared_hash
                     if transfer_record[:direction] == 1
                         transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]

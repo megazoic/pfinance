@@ -31,6 +31,50 @@ module FinanceTracker
             expect(parsed).to include("id" => a_kind_of(Integer))
             user.merge('id' => parsed['id'])
         end
+        def post_category(category)
+            post '/categories', JSON.generate(category)
+            expect(last_response.status).to eq(200)
+            parsed = JSON.parse(last_response.body)
+            expect(parsed).to include("id" => a_kind_of(Integer))
+            category.merge('id' => parsed['id'])
+        end
+        context 'when testing categories' do
+            it 'retrieves all categories' do
+                new_category1 = post_category('name' => 'discretionary', 'parent_id' => nil)
+                new_category2 = post_category('name' => 'discretionary2', 'parent_id' => nil)
+                get '/categories'
+                expect(last_response.status).to eq(200)
+                categories = JSON.parse(last_response.body)
+                expect(categories).to contain_exactly(new_category1,new_category2)
+            end
+            it 'creates new category' do
+                new_category = {
+                    'name' => 'discretionary',
+                    'parent_id' => nil
+                }
+                post_category(new_category)
+                expect(last_response.status).to eq(200)
+                category = JSON.parse(last_response.body)
+                expect(category).to include('id' => a_kind_of(Integer))
+            end
+            it 'retrieves specific category' do
+                new_category = post_category('name' => 'discretionary', 'parent_id' => nil)
+                get "/categories/#{new_category['id']}"
+                expect(last_response.status).to eq(200)
+                category = JSON.parse(last_response.body)
+                expect(category).to eq(new_category)
+            end
+            it 'it retrieves all descendant categories with specific root_id' do
+                new_category1 = post_category('name' => 'discretionary', 'parent_id' => nil)
+                new_category2 = post_category('name' => 'discretionary2', 'parent_id' => nil)
+                new_category3 = post_category('name' => 'discretionary3', 'parent_id' => new_category1['id'])
+                get "/categories/parent_id/#{new_category1['id']}"
+                expect(last_response.status).to eq(200)
+                categories = JSON.parse(last_response.body)
+                new_category3.delete('parent_id')
+                expect(categories).to contain_exactly(new_category3)
+            end
+        end
         context 'when testing transfers' do
             before(:example) do
                 # set up for testing transfers table
@@ -44,7 +88,6 @@ module FinanceTracker
                     'posted_date' => '2024-04-23',
                     'amount' => 14000,
                     'user_id' => 1,
-                    'category_id' => 1
                     }, 'debit_account_id' => 1,
                     'credit_account_id' => 2
                 }
@@ -61,7 +104,6 @@ module FinanceTracker
                     'posted_date' => '2024-04-23',
                     'amount' => 14000,
                     'user_id' => 1,
-                    'category_id' => 1
                     }, 'debit_account_id' => 1,
                     'credit_account_id' => 2
                 )
@@ -69,7 +111,6 @@ module FinanceTracker
                     'posted_date' => '2024-01-23',
                     'amount' => 14000,
                     'user_id' => 1,
-                    'category_id' => 1
                     }, 'debit_account_id' => 1,
                     'credit_account_id' => 2
                 )
@@ -77,7 +118,6 @@ module FinanceTracker
                     'posted_date' => '2024-02-23',
                     'amount' => 14000,
                     'user_id' => 1,
-                    'category_id' => 1
                     }, 'debit_account_id' => 1,
                     'credit_account_id' => 2
                 )
@@ -88,20 +128,27 @@ module FinanceTracker
             end
         end
         context 'when testing accounts' do
+            before(:example) do
+                # set up for testing accounts table
+                DB[:categories].insert(id: 1, name: "discretionary")
+            end
             it 'retrieves accounts with specific normal value' do
                 new_account1 = post_account(
                     'name' => 'house',
                     'normal' => 1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account2 = post_account(
                     'name' => 'house',
                     'normal' => -1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account3 = post_account(
                     'name' => 'house',
                     'normal' => 1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 get '/accounts/normal/-1'
@@ -117,16 +164,19 @@ module FinanceTracker
                 new_account1 = post_account(
                     'name' => 'house',
                     'normal' => 1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account2 = post_account(
                     'name' => 'house',
                     'normal' => -1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account3 = post_account(
                     'name' => 'house',
                     'normal' => 1,
+                    'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 get '/accounts'

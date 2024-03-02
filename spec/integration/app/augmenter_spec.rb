@@ -1,6 +1,7 @@
 require_relative '../../../app/augmenter'
 require_relative '../../../config/sequel'
 require_relative '../../support/db'
+require_relative '../../../app/models/category'
 
 module FinanceTracker
     RSpec.describe Augmenter, :aggregate_failures, :db do
@@ -101,6 +102,31 @@ module FinanceTracker
                         user_names << user[:name]
                     end
                     expect(user_names).to contain_exactly("Nick", "Irma")
+                end
+            end
+            context 'for categories' do
+                it 'successfully retrieves all categories' do
+                    #set up for testing categories table
+                    DB[:categories].insert(id: 1, name: "parent")
+                    DB[:categories].insert(id: 2, name: "child", parent_id: 1)
+                    all_categories = augmenter.get_records(:categories)
+                    category_names = []
+                    all_categories.each do |category|
+                        category_names << category[:name]
+                    end
+                    expect(category_names).to contain_exactly("parent", "child")
+                end
+                it 'successfully retrieves all descendants of a category' do
+                    #set up for testing categories table
+                    DB[:categories].insert(id: 1, name: "parent")
+                    DB[:categories].insert(id: 2, name: "child", parent_id: 1)
+                    DB[:categories].insert(id: 3, name: "grandchild", parent_id: 2)
+                    all_descendants = augmenter.get_records(:categories, nil, 1)
+                    descendant_names = []
+                    all_descendants.each do |descendant|
+                        descendant_names << descendant[:name]
+                    end
+                    expect(descendant_names).to contain_exactly("child", "grandchild")
                 end
             end
         end

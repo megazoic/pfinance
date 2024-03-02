@@ -2,6 +2,8 @@ require_relative './app/record_importer.rb'
 require 'logger'
 require 'json'
 require 'csv'
+require 'sequel'
+require 'rake'
 
 namespace :db do
     # Ensure DB is declared
@@ -23,6 +25,11 @@ namespace :db do
     task :reset do
       migrate.call(0)
       Sequel::Migrator.run(DB, "db/migrations")
+    end
+    task :rollback_all do
+      migrate.call(0)
+      Sequel::Migrator.run(DB, "db/migrations", target: 0)
+      #migrate.call(0)
     end
 end
 

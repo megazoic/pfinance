@@ -11,8 +11,7 @@ module FinanceTracker
             DB[table.to_sym].where(id: account_id).update(obj_to_update)
             AugmentResult.new(true, account_id, nil)
         end
-        def get_records(table, record_id = nil)
-            #records = DB[table.to_sym].all
+        def get_records(table, record_id = nil, parent_id = nil)
             if table == :accounts
                 if record_id.nil?
                     #we are getting all records
@@ -40,6 +39,19 @@ module FinanceTracker
                     records = DB[:users].all
                 else
                     records = DB[:users].where(id: record_id).all
+                end
+            elsif table == :categories
+                if record_id.nil?
+                    #we are getting all records
+                    if parent_id.nil?
+                        records = DB[:categories].all
+                    else
+                        #we are getting all descendants of a category
+                        records = Category.where(id: parent_id).first.return_descendants
+                    end
+                else
+                    #we are getting a single record
+                    records = DB[:categories].where(id: record_id).first
                 end
             end
         end

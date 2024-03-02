@@ -21,6 +21,28 @@ module FinanceTracker
             @ledger = ledger
             super()
         end
+        get '/categories' do
+            result = @augmenter.get_records(:categories)
+            JSON.generate(result)
+        end
+        get '/categories/:id' do
+            result = @augmenter.get_records(:categories, params[:id])
+            JSON.generate(result)
+        end
+        get '/categories/parent_id/:value' do
+            result = @augmenter.get_records(:categories, nil, params[:value])
+            JSON.generate(result)
+        end
+        post '/categories' do
+            category = JSON.parse(request.body.read)
+            result = @augmenter.create(category, :categories)
+            if result.success?
+                JSON.generate('id' => result.id)
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
+        end
         post '/transfers' do
             #curl -i -X POST -H "Content-Type: application/json" -d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1,\"category_id\":1},\"debit_account_id\":1,
@@ -105,6 +127,13 @@ module FinanceTracker
         get '/users/:id' do
             result = @augmenter.get_records(:users, params[:id])
             JSON.generate(result)
+        end
+        options "*" do
+            response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
+           
+            response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Cache-Control, Accept"
+           
+            200
         end
     end
 end    
