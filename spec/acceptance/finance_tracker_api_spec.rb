@@ -39,13 +39,25 @@ module FinanceTracker
             category.merge('id' => parsed['id'])
         end
         context 'when testing categories' do
-            it 'retrieves all categories' do
-                new_category1 = post_category('name' => 'discretionary', 'parent_id' => nil)
-                new_category2 = post_category('name' => 'discretionary2', 'parent_id' => nil)
+            it 'retrieves all categories as a nested array' do
+                new_root_cat1 = post_category('name' => 'root1', 'parent_id' => nil)
+                new_root_cat2 = post_category('name' => 'root2', 'parent_id' => nil)
+                new_child_cat1 = post_category('name' => 'child11', 'parent_id' => new_root_cat1['id'])
+                new_child_cat2 = post_category('name' => 'child12', 'parent_id' => new_root_cat1['id'])
+                new_grand_child_cat1 = post_category('name' => 'gchild111', 'parent_id' => new_child_cat1['id'])
                 get '/categories'
                 expect(last_response.status).to eq(200)
                 categories = JSON.parse(last_response.body)
-                expect(categories).to contain_exactly(new_category1,new_category2)
+                expect(categories[0]).to be_an(Array)
+                expect(categories[0][0] ).to include("name" => "root1")
+                expect(categories[0][1]).to be_an(Array)
+                expect(categories[0][1][0]).to include("name" => "child11")
+                expect(categories[0][1][1]).to be_an(Array)
+                expect(categories[0][1][1][0]).to include("name" => "gchild111")
+                expect(categories[0][2]).to be_an(Array)
+                expect(categories[0][2][0]).to include("name" => "child12")
+                expect(categories[1]).to be_an(Array)
+                expect(categories[1][0]).to include("name" => "root2")
             end
             it 'creates new category' do
                 new_category = {

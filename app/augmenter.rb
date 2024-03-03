@@ -44,7 +44,13 @@ module FinanceTracker
                 if record_id.nil?
                     #we are getting all records
                     if parent_id.nil?
-                        records = DB[:categories].all
+                        # we need to return all categories as a nested array of hashes
+                        output = []
+                        records = Category.where(parent_id: nil).all
+                        records.each do |record|
+                            output << record.return_cats_as_nested_array
+                        end
+                        return output
                     else
                         #we are getting all descendants of a category
                         records = Category.where(id: parent_id).first.return_descendants
