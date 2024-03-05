@@ -30,7 +30,7 @@ module FinanceTracker
                     transfer_id: transfer_id,
                     posted_date: dt.to_date,
                     date: DateTime.now.to_date,
-                    direction: -1,
+                    direction: 1,
                     amount: transfer['shared']['amount'],
                     user_id: transfer['shared']['user_id'],
                     account_id: transfer['debit_account_id'],
@@ -40,7 +40,7 @@ module FinanceTracker
                     transfer_id: transfer_id,
                     posted_date: dt.to_date,
                     date: DateTime.now.to_date,
-                    direction: 1,
+                    direction: -1,
                     amount: transfer['shared']['amount'],
                     user_id: transfer['shared']['user_id'],
                     account_id: transfer['credit_account_id'],
@@ -102,7 +102,7 @@ module FinanceTracker
             transfers_array.each do |transfer_record|
                 transaction_id = "#{transfer_record[:posted_date].to_s}_#{transfer_record[:transfer_id]}"
                 if transfer_hash.has_key?(transaction_id)
-                    if transfer_record[:direction] == 1
+                    if transfer_record[:direction] == -1 #credit directions always -1
                         transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
                         transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
                     else
@@ -116,7 +116,7 @@ module FinanceTracker
                     shared_hash = {"posted_date" => transfer_record[:posted_date], "amount" => transfer_record[:amount],
                         "user_id" => transfer_record[:user_id]}
                     transfer_hash[transaction_id]["shared"] = shared_hash
-                    if transfer_record[:direction] == 1
+                    if transfer_record[:direction] == -1 #credit directions always -1
                         transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
                         transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
                     else

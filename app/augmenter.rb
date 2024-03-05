@@ -23,6 +23,9 @@ module FinanceTracker
                             user_name = DB[:users].where(id: record[:user_id]).first[:name]
                             record[:user_name] = user_name
                         end
+                        category_name = DB[:categories].where(id: record[:category_id]).first[:name]
+                        record[:category_name] = category_name
+                        record.delete(:catgeory_id)
                     end
                 else
                     record = DB[:accounts].where(id: record_id).first
@@ -61,8 +64,21 @@ module FinanceTracker
                 end
             end
         end
+        def get_categories_flat
+            records = DB[:categories].all
+            records.each do |record|
+                record.delete(:parent_id)
+            end
+        end
         def get_accounts_w_normal(normal)
-            records = DB[:accounts].where(normal: normal).all
+            accounts = Account.all
+            accounts_with_normal = []
+            accounts.each do |account|
+                if account.category.normal == normal.to_i
+                    accounts_with_normal << account.values
+                end
+            end
+            accounts_with_normal
         end
         def get_accounts_w_user_id(id)
             records = DB[:accounts].where(user_id: id).all

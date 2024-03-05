@@ -2,6 +2,7 @@ require_relative '../../../app/augmenter'
 require_relative '../../../config/sequel'
 require_relative '../../support/db'
 require_relative '../../../app/models/category'
+require_relative '../../../app/models/account'
 
 module FinanceTracker
     RSpec.describe Augmenter, :aggregate_failures, :db do
@@ -9,15 +10,18 @@ module FinanceTracker
             # set up for testing accounts table
             DB[:users].insert(id: 1, name: "Nick")
             DB[:users].insert(id: 2, name: "Irma")
+            DB[:categories].insert(id: 1, name: "root", normal: 1)
+            DB[:categories].insert(id: 2, name: "child", parent_id: 1, normal: -1)
+            DB[:categories].insert(id: 3, name: "grandchild", parent_id: 2, normal: 1)
         end
 
         let(:augmenter) { Augmenter.new }
         let(:account) do
           {
             'name' => 'brokerage',
-            'normal' => 1,
             'user_id' => 1,
-            'description' => 'some description'
+            'description' => 'some description',
+            'category_id' => 1
           }
         end
     
@@ -29,19 +33,17 @@ module FinanceTracker
                     expect(DB[:accounts].all).to match [a_hash_including(
                         id: result.id,
                         name: 'brokerage',
-                        normal: 1,
                         user_id: 1,
-                        description: 'some description'
+                        description: 'some description',
+                        category_id: 1
                     )]
                 end
                 it 'successfully updates the account' do
                     result = augmenter.create(account, :accounts)
                     updated_account = DB[:accounts].where(id: result.id).first
-                    updated_account[:normal] = -1
                     updated_result = augmenter.update(updated_account, :accounts)
-                    puts "updated_result: #{updated_result}"
                     expect(updated_result).to be_success
-                    expect(DB[:accounts].where(id: updated_result.id).first).to include ({normal: -1})
+                    expect(DB[:accounts].where(id: updated_result.id).first).to include ({category_id: 1})
                 end
             end
             context 'with a valid user' do
@@ -73,11 +75,11 @@ module FinanceTracker
                         *expected_user_names
                     )
                 end
-                it 'successfully retrieves accounts with specific normal value' do
+                it 'successfully retrieves accounts with specific normal' do
                     augmenter.create(account, :accounts)
-                    account['normal'] = -1
+                    account['category_id'] = 2
                     augmenter.create(account, :accounts)
-                    account['normal'] = 1
+                    account['category_id'] = 3
                     augmenter.create(account, :accounts)
                     records_w_neg_normal = augmenter.get_accounts_w_normal(-1)
                     expect(records_w_neg_normal.length).to eq(1)
@@ -106,21 +108,17 @@ module FinanceTracker
             end
             context 'for categories' do
                 it 'successfully retrieves all categories' do
-                    #set up for testing categories table
-                    DB[:categories].insert(id: 1, name: "parent")
-                    DB[:categories].insert(id: 2, name: "child", parent_id: 1)
-                    all_categories = augmenter.get_records(:categories)
+                    #all_categories: [[{:id=>1, :name=>"root", :normal=>1}, [{:id=>2, :name=>"child",
+                    # :normal=>-1}, [{:id=>3, :name=>"grandchild", :normal=>1}]]]]
+                    all_categories = augmenter.get_records(:categories).flatten
                     category_names = []
                     all_categories.each do |category|
                         category_names << category[:name]
                     end
-                    expect(category_names).to contain_exactly("parent", "child")
+                    expect(category_names).to contain_exactly("root", "child", "grandchild")
                 end
                 it 'successfully retrieves all descendants of a category' do
                     #set up for testing categories table
-                    DB[:categories].insert(id: 1, name: "parent")
-                    DB[:categories].insert(id: 2, name: "child", parent_id: 1)
-                    DB[:categories].insert(id: 3, name: "grandchild", parent_id: 2)
                     all_descendants = augmenter.get_records(:categories, nil, 1)
                     descendant_names = []
                     all_descendants.each do |descendant|

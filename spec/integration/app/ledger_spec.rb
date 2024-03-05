@@ -5,9 +5,10 @@ module FinanceTracker
     before(:example) do
             # set up for testing transfers table
             DB[:users].insert(id: 1, name: "Nick")
-            DB[:accounts].insert(id: 1, name: "House", normal: 1)
-            DB[:accounts].insert(id: 2, name: "Vacation", normal: 1)
-            DB[:categories].insert(id: 1, name: "Discretionary")
+            DB[:categories].insert(id: 1, name: "Revenue", normal: 1)
+            DB[:categories].insert(id: 2, name: "Discretionary", normal: 1)
+            DB[:accounts].insert(id: 1, name: "House", category_id: 1)
+            DB[:accounts].insert(id: 2, name: "Vacation", category_id: 2)
     end
 
     let(:ledger) { Ledger.new }

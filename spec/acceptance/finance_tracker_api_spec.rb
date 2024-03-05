@@ -40,11 +40,11 @@ module FinanceTracker
         end
         context 'when testing categories' do
             it 'retrieves all categories as a nested array' do
-                new_root_cat1 = post_category('name' => 'root1', 'parent_id' => nil)
-                new_root_cat2 = post_category('name' => 'root2', 'parent_id' => nil)
-                new_child_cat1 = post_category('name' => 'child11', 'parent_id' => new_root_cat1['id'])
-                new_child_cat2 = post_category('name' => 'child12', 'parent_id' => new_root_cat1['id'])
-                new_grand_child_cat1 = post_category('name' => 'gchild111', 'parent_id' => new_child_cat1['id'])
+                new_root_cat1 = post_category('name' => 'root1', 'parent_id' => nil, 'normal' => 1)
+                new_root_cat2 = post_category('name' => 'root2', 'parent_id' => nil, 'normal' => 1)
+                new_child_cat1 = post_category('name' => 'child11', 'parent_id' => new_root_cat1['id'], 'normal' => 1)
+                new_child_cat2 = post_category('name' => 'child12', 'parent_id' => new_root_cat1['id'], 'normal' => 1)
+                new_grand_child_cat1 = post_category('name' => 'gchild111', 'parent_id' => new_child_cat1['id'], 'normal' => 1)
                 get '/categories'
                 expect(last_response.status).to eq(200)
                 categories = JSON.parse(last_response.body)
@@ -62,7 +62,8 @@ module FinanceTracker
             it 'creates new category' do
                 new_category = {
                     'name' => 'discretionary',
-                    'parent_id' => nil
+                    'parent_id' => nil,
+                    'normal' => 1
                 }
                 post_category(new_category)
                 expect(last_response.status).to eq(200)
@@ -70,16 +71,16 @@ module FinanceTracker
                 expect(category).to include('id' => a_kind_of(Integer))
             end
             it 'retrieves specific category' do
-                new_category = post_category('name' => 'discretionary', 'parent_id' => nil)
+                new_category = post_category('name' => 'discretionary', 'parent_id' => nil, 'normal' => 1)
                 get "/categories/#{new_category['id']}"
                 expect(last_response.status).to eq(200)
                 category = JSON.parse(last_response.body)
                 expect(category).to eq(new_category)
             end
             it 'it retrieves all descendant categories with specific root_id' do
-                new_category1 = post_category('name' => 'discretionary', 'parent_id' => nil)
-                new_category2 = post_category('name' => 'discretionary2', 'parent_id' => nil)
-                new_category3 = post_category('name' => 'discretionary3', 'parent_id' => new_category1['id'])
+                new_category1 = post_category('name' => 'discretionary', 'parent_id' => nil, 'normal' => 1)
+                new_category2 = post_category('name' => 'discretionary2', 'parent_id' => nil, 'normal' => 1)
+                new_category3 = post_category('name' => 'discretionary3', 'parent_id' => new_category1['id'], 'normal' => 1)
                 get "/categories/parent_id/#{new_category1['id']}"
                 expect(last_response.status).to eq(200)
                 categories = JSON.parse(last_response.body)
@@ -91,9 +92,10 @@ module FinanceTracker
             before(:example) do
                 # set up for testing transfers table
                 DB[:users].insert(id: 1, name: "Nick")
-                DB[:categories].insert(id: 1, name: "discretionary")
-                DB[:accounts].insert(id: 1, name: "cat1", normal: 1)
-                DB[:accounts].insert(id: 2, name: "cat2", normal: 1)
+                DB[:categories].insert(id: 1, name: "discretionary", normal: 1)
+                DB[:categories].insert(id: 2, name: "savings", normal: -1)
+                DB[:accounts].insert(id: 1, name: "account1", category_id: 1, user_id: 1)
+                DB[:accounts].insert(id: 2, name: "account2", category_id: 2, user_id: 1)
             end
                 it 'records submitted transfer' do
                 transfer = {'shared' => {
@@ -142,24 +144,22 @@ module FinanceTracker
         context 'when testing accounts' do
             before(:example) do
                 # set up for testing accounts table
-                DB[:categories].insert(id: 1, name: "discretionary")
+                DB[:categories].insert(id: 1, name: "discretionary", normal: 1)
+                DB[:categories].insert(id: 2, name: "savings", normal: -1)
             end
             it 'retrieves accounts with specific normal value' do
                 new_account1 = post_account(
                     'name' => 'house',
-                    'normal' => 1,
                     'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account2 = post_account(
                     'name' => 'house',
-                    'normal' => -1,
-                    'category_id' => 1,
+                    'category_id' => 2,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account3 = post_account(
                     'name' => 'house',
-                    'normal' => 1,
                     'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
@@ -175,19 +175,16 @@ module FinanceTracker
             it 'retrieves all accounts' do
                 new_account1 = post_account(
                     'name' => 'house',
-                    'normal' => 1,
                     'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account2 = post_account(
                     'name' => 'house',
-                    'normal' => -1,
                     'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
                 new_account3 = post_account(
                     'name' => 'house',
-                    'normal' => 1,
                     'category_id' => 1,
                     'description' => 'from which we pay bills to which salary added'
                 )
@@ -196,15 +193,15 @@ module FinanceTracker
                 accounts = JSON.parse(last_response.body)
                 clean_accounts = []
                 accounts.each do |account|
-                    clean_accounts << account.reject!{|k,v| ["user_id","user_name"].include? k}
+                    clean_accounts << account.reject!{|k,v| ["user_id","user_name", "category_name"].include? k}
                 end
                 expect(clean_accounts).to contain_exactly(new_account1,new_account2,new_account3)
             end
             it 'creates new account' do
                 new_account = {
                     'name' => 'house',
-                    'normal' => '1',
-                    'description' => 'from which we pay bills to which salary added'
+                    'description' => 'from which we pay bills to which salary added',
+                    'category_id' => 1
                 }
                 post_account(new_account)
                 expect(last_response.status).to eq(200)
@@ -215,7 +212,7 @@ module FinanceTracker
                 before(:example) do
                     # set up for testing accounts table
                     DB[:users].insert(id: 1, name: "Nick")
-                    DB[:accounts].insert(id: 1, name: "account1", normal: 1, user_id: 1)
+                    DB[:accounts].insert(id: 1, name: "account1", user_id: 1, category_id: 1)
                 end
                 it 'updates account' do
                     post '/accounts/1', JSON.generate('name' => 'account2')
