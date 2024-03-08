@@ -4,6 +4,8 @@ require 'json'
 require 'csv'
 require 'sequel'
 require 'rake'
+require './.ignore/sensitive.rb'
+require './app/models/account'
 
 namespace :db do
     # Ensure DB is declared
@@ -36,7 +38,7 @@ end
 
 task :import_records, [:arg1] do |t, args|
   table = CSV.parse(File.read(args[:arg1]), headers: true)
-  record_hash = {'account' => 0, 'amount' => 0, 'description' => 0, 'normal' => 0, 'posted_date' => 0}
+  record_hash = {'account' => 0, 'amount' => 0, 'description' => 0, 'direction' => 0, 'posted_date' => 0}
   rake_result= FinanceTracker::RakeResult.new(false, table.length, 0, nil)
   error_count = 0
   account_header = ""
@@ -57,13 +59,34 @@ task :import_records, [:arg1] do |t, args|
   end
 
   table.each do |data|
+    real_world_accounts = Account::RWA
     record_hash['account'] = data[account_header][-4..-1]
+    #test to see if account number is included in real_world_accounts
+    found_account = false
+    real_world_accounts.each do |key, value|
+      if value.include?(record_hash['account'])
+        found_account = true
+        break
+      end
+    end
+    if found_account == false
+      terminate_import = true
+    end
     if data['Debit'] != ""
+      #will need to increase balance of credit card account and expenses account
       record_hash['amount'] = data['Debit']
-      record_hash['normal'] = "-1"
+      if real_world_accounts['liabilies'].include?(record_hash['account'])
+        record_hash['direction'] = "-1"
+      else
+        record_hash['direction'] = "1"
+      end
     else
       record_hash['amount'] = data['Credit']
-      record_hash['normal'] = "1"
+      if real_world_accounts['liabilities'].include?(record_hash['account'])
+        record_hash['direction'] = "1"
+      else
+        record_hash['direction'] = "-1"
+      end
     end
     record_hash['description'] = "#{data['Description']}|#{data[aux_header]}"
     if posted_date == 'Post Date'

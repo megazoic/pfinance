@@ -51,7 +51,8 @@ module FinanceTracker
               import_logs.insert(
                 date: Date.today,
                 record: erroneous_record,
-                error: error
+                error: error,
+                description: "error could be incorrect account number"
               )
             end
         end

@@ -11,6 +11,74 @@ module FinanceTracker
         end
     end
     class Ledger
+        def unprocessed_records
+            # get next unprocessed record which we assume is from either Asset or Liability account
+            unprocessed_transfer =  DB[:unprocessed_records].order(:id).first
+            # need to switch real world account with an account from our db
+            a = Account.new
+            account = a.get_corresp_app_account(unprocessed_transfer[:account])
+            unprocessed_transfer[:account_id] = account.id
+            unprocessed_transfer[:account_name] = account.name
+            unprocessed_transfer.delete(:account)
+            # need to build hash of account_id and account_name for the opposite accounts
+            # to be used in the post '/transfers' route
+            # split here depending on Liability or Asset
+            if account.category.normal == -1
+                # we are dealing with a liability account
+                if unprocessed_transfer[:direction] == -1
+                    # we are dealing with a debit return all expense accounts
+                    root_cat = Category.where(name: 'Expense').first
+                    all_cats = root_cat.return_cats_as_nested_array.flatten
+                    expense_accounts = {}
+                    all_cats.each do |cat|
+                        accounts = Account.where(category_id: cat["id"])
+                        accounts.each do |account|
+                            expense_accounts[account.id] = account.name
+                        end
+                    end
+                    unprocessed_transfer[:expense_accounts] = expense_accounts
+                    return unprocessed_transfer
+                else
+                    # we are dealing with a credit
+                    if unprocessed_transfer[:description].match(ENV['CC1_PMT_PATTERN'])
+                        # we are dealing with a credit card payment return asset checking account
+                    else
+                        # we are dealing with a credit card reimbursement or cash back
+                        # alert user to check for charge on same statement
+                        # return all expense accounts
+                    end
+                end
+            else
+                # we are dealing with an asset account
+                if unprocessed_transfer[:direction] == 1
+                    # we are dealing with a debit entry
+                    if unprocessed_transfer[:description].match(ENV['CC_PATTERN'])
+                        # we are dealing with a payment to credit card return liability account
+                    else
+                        # we are dealing with purchase return all expense accounts
+                    end
+                else
+                    # we are dealing with work reimbursement or salary
+                    if unprocessed_transfer[:description].match(ENV['WORK_REIMBURSE_PATTERN'])
+                        # we are dealing with work reimbursement return liability account
+                    else
+                        if unprocessed_transfer[:description].match(ENV['SALARY'])
+                            # we are dealing with salary return revenue account
+                        else
+                            # we are dealing with payment to us return expense account
+                        end
+                    end
+                end
+            end
+            a = Augmenter.new
+            str_to_match = {salary: ENV['SALARY', work_reimburse: ENV['WORK_REIMBURSE_PATTERN'],
+                cc_all: ENV['CC_PATTERN'], cc1_pmt: ENV['CC1_PMT_PATTERN']]}
+            str_to_match.each do |key, value|
+                if value.match(unprocessed_transfer[:description])
+                end
+            end
+            unprocessed_transfer
+        end
         def record(transfer)
             # validate data
             validated = validate_transfer(transfer)
@@ -25,7 +93,7 @@ module FinanceTracker
             record_ids = Hash.new
             DB.transaction do
                 transfer_records =  DB[:transfers]
-                # for debit side
+                # for debit side, money is going into this account
                 record_ids["debit"] = transfer_records.insert(
                     transfer_id: transfer_id,
                     posted_date: dt.to_date,
