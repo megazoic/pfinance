@@ -5,7 +5,7 @@ class Account < Sequel::Model
     many_to_one :user
     many_to_one :category
     
-    RWA = {'liabilies' => [ENV['PFINANCE_LIABILITY_1'], ENV['PFINANCE_LIABILITY_2']],
+    RWA = {'liabilities' => [ENV['PFINANCE_LIABILITY_1'], ENV['PFINANCE_LIABILITY_2']],
     'assets' => [ENV['PFINANCE_ASSET_1']]}
     RWA_2_ACCOUNT = {ENV['PFINANCE_LIABILITY_1'] => 'Liability_1', ENV['PFINANCE_LIABILITY_2'] => 'Liability_2',
         ENV['PFINANCE_ASSET_1'] => 'Asset_1'} 

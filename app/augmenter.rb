@@ -51,7 +51,7 @@ module FinanceTracker
                         output = []
                         records = Category.where(parent_id: nil).all
                         records.each do |record|
-                            output << record.return_cats_as_nested_array
+                            output << record.get_cats_as_nested_array
                         end
                         return output
                     else

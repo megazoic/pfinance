@@ -72,10 +72,10 @@ task :import_records, [:arg1] do |t, args|
     if found_account == false
       terminate_import = true
     end
-    if data['Debit'] != ""
+    if !data['Debit'].nil?
       #will need to increase balance of credit card account and expenses account
       record_hash['amount'] = data['Debit']
-      if real_world_accounts['liabilies'].include?(record_hash['account'])
+      if real_world_accounts['liabilities'].include?(record_hash['account'])
         record_hash['direction'] = "-1"
       else
         record_hash['direction'] = "1"

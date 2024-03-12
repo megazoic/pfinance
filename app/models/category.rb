@@ -22,13 +22,13 @@ class Category < Sequel::Model
         end
         descendants
     end
-    def return_cats_as_nested_array
+    def get_cats_as_nested_array
         #return all categories as a nested array of hashes
         cats = []
         cats << self.values.delete_if { |k, v| k == :parent_id }
         if self.children && self.children.length > 0
             self.children.each do |child|
-                cats << child.return_cats_as_nested_array
+                cats << child.get_cats_as_nested_array
             end
         end
         cats

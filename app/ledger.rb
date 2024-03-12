@@ -1,6 +1,10 @@
 require 'date'
 require 'json'
 require_relative '../config/sequel'
+require_relative './models/account'
+require_relative './models/category'
+require_relative './augmenter'
+require_relative './record_importer.rb'
 
 module FinanceTracker
     RecordResult = Struct.new(:success?, :transfer_ids, :error_message)
@@ -11,41 +15,35 @@ module FinanceTracker
         end
     end
     class Ledger
-        def unprocessed_records
+        def next_unprocessed_record
             # get next unprocessed record which we assume is from either Asset or Liability account
             unprocessed_transfer =  DB[:unprocessed_records].order(:id).first
+            # if no unprocessed records return empty array
+            return [] unless unprocessed_transfer
             # need to switch real world account with an account from our db
             a = Account.new
             account = a.get_corresp_app_account(unprocessed_transfer[:account])
             unprocessed_transfer[:account_id] = account.id
             unprocessed_transfer[:account_name] = account.name
             unprocessed_transfer.delete(:account)
-            # need to build hash of account_id and account_name for the opposite accounts
-            # to be used in the post '/transfers' route
+            # need to build hash of account_id and account_name for the paired accounts
+            # which are those most likely to be used in the post '/transfers' route
             # split here depending on Liability or Asset
             if account.category.normal == -1
-                # we are dealing with a liability account
+                # we are dealing with a liability account need to get paired accounts
                 if unprocessed_transfer[:direction] == -1
                     # we are dealing with a debit return all expense accounts
-                    root_cat = Category.where(name: 'Expense').first
-                    all_cats = root_cat.return_cats_as_nested_array.flatten
-                    expense_accounts = {}
-                    all_cats.each do |cat|
-                        accounts = Account.where(category_id: cat["id"])
-                        accounts.each do |account|
-                            expense_accounts[account.id] = account.name
-                        end
-                    end
-                    unprocessed_transfer[:expense_accounts] = expense_accounts
-                    return unprocessed_transfer
+                    unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                 else
                     # we are dealing with a credit
                     if unprocessed_transfer[:description].match(ENV['CC1_PMT_PATTERN'])
                         # we are dealing with a credit card payment return asset checking account
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Assets")
                     else
                         # we are dealing with a credit card reimbursement or cash back
                         # alert user to check for charge on same statement
                         # return all expense accounts
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                     end
                 end
             else
@@ -54,30 +52,48 @@ module FinanceTracker
                     # we are dealing with a debit entry
                     if unprocessed_transfer[:description].match(ENV['CC_PATTERN'])
                         # we are dealing with a payment to credit card return liability account
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Liabilities")
                     else
                         # we are dealing with purchase return all expense accounts
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                     end
                 else
                     # we are dealing with work reimbursement or salary
                     if unprocessed_transfer[:description].match(ENV['WORK_REIMBURSE_PATTERN'])
                         # we are dealing with work reimbursement return liability account
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Liabilities")
                     else
-                        if unprocessed_transfer[:description].match(ENV['SALARY'])
+                        if unprocessed_transfer[:description].match(ENV['SALARY_PATTERN'])
                             # we are dealing with salary return revenue account
+                            unprocessed_transfer[:paired_accounts] = get_paired_accounts("Revenue")
                         else
                             # we are dealing with payment to us return expense account
+                            unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                         end
                     end
                 end
+                return unprocessed_transfer
             end
             a = Augmenter.new
-            str_to_match = {salary: ENV['SALARY', work_reimburse: ENV['WORK_REIMBURSE_PATTERN'],
-                cc_all: ENV['CC_PATTERN'], cc1_pmt: ENV['CC1_PMT_PATTERN']]}
+            str_to_match = {salary: ENV['SALARY_PATTERN'], work_reimburse: ENV['WORK_REIMBURSE_PATTERN'],
+                cc_all: ENV['CC_PATTERN'], cc1_pmt: ENV['CC1_PMT_PATTERN']}
             str_to_match.each do |key, value|
                 if value.match(unprocessed_transfer[:description])
                 end
             end
             unprocessed_transfer
+        end
+        def get_paired_accounts(account_type)
+            root_cat = Category.where(name: account_type).first
+            all_cats = root_cat.get_cats_as_nested_array.flatten
+            paired_accounts = {}
+            all_cats.each do |cat|
+                accounts = Account.where(category_id: cat[:id]).all
+                accounts.each do |account|
+                    paired_accounts[account.values[:id]] = account.values[:name]
+                end
+            end
+            paired_accounts
         end
         def record(transfer)
             # validate data
@@ -196,5 +212,6 @@ module FinanceTracker
             end
             transfer_hash
         end
+        private :get_paired_accounts, :group_transfers, :validate_transfer
     end
 end
