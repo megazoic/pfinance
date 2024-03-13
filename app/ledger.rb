@@ -154,9 +154,9 @@ module FinanceTracker
             "credit_account" => 0, "amount" => 0}
             user_ids = DB[:users].map(:id)
             account_ids = DB[:accounts].map(:id)
-            user_ids.include?(transfer["shared"]["user_id"]) ? is_valid["user"] = 1 : false
-            account_ids.include?(transfer["debit_account_id"]) ? is_valid["debit_account"] = 1 : false
-            account_ids.include?(transfer["credit_account_id"]) ? is_valid["credit_account"] = 1 : false
+            user_ids.include?(transfer["shared"]["user_id"].to_i) ? is_valid["user"] = 1 : false
+            account_ids.include?(transfer["debit_account_id"].to_i) ? is_valid["debit_account"] = 1 : false
+            account_ids.include?(transfer["credit_account_id"].to_i) ? is_valid["credit_account"] = 1 : false
 
             t_date_array = transfer['shared']['posted_date'].split("-")
             begin
@@ -167,7 +167,7 @@ module FinanceTracker
                 puts "date's in error #{e}"
             end
             
-            transfer["shared"]["amount"] > 0 ? is_valid["amount"] = 1 : false
+            transfer["shared"]["amount"].to_i > 0 ? is_valid["amount"] = 1 : false
             # test if any keys still have a false value
             !is_valid.value?(0)
         end

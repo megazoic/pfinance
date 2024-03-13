@@ -15,7 +15,7 @@ module FinanceTracker
             enable :cross_origin
         end
         before do
-            response.headers['Access-Control-Allow-Origin'] = 'http://localhost'
+            response.headers['Access-Control-Allow-Origin'] = '*'
         end
         def initialize(ledger: Ledger.new, augmenter: Augmenter.new)
             @augmenter = augmenter
@@ -48,8 +48,8 @@ module FinanceTracker
                 JSON.generate('error' => result.error_message)
             end
         end
-        get '/unprocessed_records' do
-            result = @ledger.unprocessed_records
+        get '/next_unprocessed_record' do
+            result = @ledger.next_unprocessed_record
             JSON.generate(result)
         end
         post '/transfers' do
@@ -139,10 +139,9 @@ module FinanceTracker
             JSON.generate(result)
         end
         options "*" do
-            response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
-           
-            response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Cache-Control, Accept"
-           
+            response.headers["Allow"] = "GET, PUT, POST, DELETE, OPTIONS"
+            response.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type, Accept, X-User-Email, X-Auth-Token"
+            response.headers["Access-Control-Allow-Origin"] = "*"
             200
         end
     end
