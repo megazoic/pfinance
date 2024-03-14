@@ -46,6 +46,7 @@ module FinanceTracker
                         # we are dealing with a credit card reimbursement or cash back
                         # alert user to check for charge on same statement
                         # return all expense accounts but TODO also need to return asset checking account
+                        unprocessed_transfer[:alert] = "Refund or cash back"
                         unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                     end
                 end
@@ -64,6 +65,7 @@ module FinanceTracker
                     # we are dealing with work reimbursement or salary
                     if unprocessed_transfer[:description].match(ENV['WORK_REIMBURSE_PATTERN'])
                         # we are dealing with work reimbursement return liability account
+                        unprocessed_transfer[:alert] = "Work reimbursement"
                         unprocessed_transfer[:paired_accounts] = get_paired_accounts("Liabilities")
                     else
                         if unprocessed_transfer[:description].match(ENV['SALARY_PATTERN'])
@@ -71,24 +73,14 @@ module FinanceTracker
                             unprocessed_transfer[:paired_accounts] = get_paired_accounts("Revenue")
                         else
                             # we are dealing with payment to us return expense account
+                            unprocessed_transfer[:alert] = "Reimbursement"
                             unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                         end
                     end
                 end
-                #return unprocessed_transfer
             end
-=begin
-            a = Augmenter.new
-            str_to_match = {salary: ENV['SALARY_PATTERN'], work_reimburse: ENV['WORK_REIMBURSE_PATTERN'],
-                cc_all: ENV['CC_PATTERN'], cc1_pmt: ENV['CC1_PMT_PATTERN']}
-            str_to_match.each do |key, value|
-                if value.match(unprocessed_transfer[:description])
-                end
-            end
-=end
             # need to reset the direction now that we have the paired accounts
             unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
-            puts "unprocessed_transfer: #{unprocessed_transfer}"
             unprocessed_transfer
         end
         def get_paired_accounts(account_type)
