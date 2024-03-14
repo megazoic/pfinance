@@ -46,7 +46,7 @@ module FinanceTracker
               'amount' => 1400,
               'description' => 'BLAHBLAH|Merchandise',
               'posted_date' => '2024-01-25',
-              'direction' => "-1",
+              'direction' => "1",
               'date' => '2024-03-09'
           }
         end
@@ -56,7 +56,7 @@ module FinanceTracker
               'amount' => 1600,
               'description' => "#{ENV['BANK1']} CRDT CD  ONLINE PMT",
               'posted_date' => '2024-02-13',
-              'direction' => "1",
+              'direction' => "-1",
               'date' => '2024-03-09'
           }
         end
@@ -69,7 +69,7 @@ module FinanceTracker
             #'description' => 'TERMINAL CNP TX                     VENMO*BLAH BLAH NEW YORK NY|',
             #'description' => "POS PCH CSH BACK  TERMINAL 99999999 BLAHBLAH",
             'posted_date' => '2024-02-13',
-            'direction' => "1",
+            'direction' => "-1",
             'date' => '2024-03-09'
           }
         end
@@ -80,7 +80,7 @@ module FinanceTracker
             #'description' => "#{ENV['BANK1']} CRDT CD  ONLINE PMT        20245111|",
             'description' => "BLAH #{ENV['WORK_REIMBURSE']}      BLAH*VV*13456895-1-V1334300345-1*BU000.00*00.00\|",
             'posted_date' => '2024-02-13',
-            'direction' => "-1",
+            'direction' => "1",
             'date' => '2024-03-09'
           }
         end
@@ -100,7 +100,7 @@ module FinanceTracker
             'amount' => 1600,
             'description' => "BLAH BLAH 310      #{ENV['SALARY']}         23440122|",
             'posted_date' => '2024-02-13',
-            'direction' => "-1",
+            'direction' => "1",
             'date' => '2024-03-09'
           }
         end
@@ -178,6 +178,27 @@ module FinanceTracker
           expect(result.error_message).to include('Invalid transfer: missing or corrupt data')
 
           expect(DB[:transfers].count).to eq(0)
+        end
+      end
+      context 'when the transfer comes from an unprocessed record' do
+        it 'successfully saves the transfer and deletes the unprocessed record' do
+          DB[:unprocessed_records].insert(id: 1, account: 1, amount: 140000,
+            posted_date: '2024-01-23', date: '2024-03-09', description: 'BLAHBLAH|Merchandise', direction: -1)
+          transfer['shared']['un_pr_record_id'] = 1
+          result = ledger.record(transfer)
+          expect(result).to be_success
+          expect(DB[:transfers].count).to eq(2)
+          expect(DB[:unprocessed_records].count).to eq(0)
+        end
+        it 'rejects the transfer and does not delete the unprocessed record when it is invalid' do
+          DB[:unprocessed_records].insert(id: 1, account: 1, amount: 140000,
+            posted_date: '2024-01-23', date: '2024-03-09', description: 'BLAHBLAH|Merchandise', direction: -1)
+          transfer['shared']['un_pr_record_id'] = 1
+          transfer['debit_account_id'] = nil
+          result = ledger.record(transfer)
+          expect(result).not_to be_success
+          expect(DB[:transfers].count).to eq(0)
+          expect(DB[:unprocessed_records].count).to eq(1)
         end
       end
     end

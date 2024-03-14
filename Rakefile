@@ -93,19 +93,28 @@ task :import_records, [:arg1] do |t, args|
     end
     if !data['Debit'].nil?
       #will need to increase balance of credit card account and expenses account
+      #assign a direction that is opposite of what is listed in the csv
+      #bc the csv is from the perspective of the bank/credit card company
       record_hash['amount'] = data['Debit']
+=begin
       if real_world_accounts['liabilities'].include?(record_hash['account'])
-        record_hash['direction'] = "-1"
-      else
         record_hash['direction'] = "1"
+      else
+        record_hash['direction'] = "-1"
       end
+=end
+      # since bringing into personal finance app, the direction needs to be opposite of what is in the csv
+      record_hash['direction'] = "-1"
     else
       record_hash['amount'] = data['Credit']
+=begin
       if real_world_accounts['liabilities'].include?(record_hash['account'])
-        record_hash['direction'] = "1"
-      else
         record_hash['direction'] = "-1"
+      else
+        record_hash['direction'] = "1"
       end
+=end
+      record_hash['direction'] = "1"
     end
     record_hash['description'] = "#{data['Description']}|#{data[aux_header]}"
     if posted_date == 'Post Date'

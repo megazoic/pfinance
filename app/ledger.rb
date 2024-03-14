@@ -26,12 +26,15 @@ module FinanceTracker
             unprocessed_transfer[:account_id] = account.id
             unprocessed_transfer[:account_name] = account.name
             unprocessed_transfer.delete(:account)
+            # need to reverse the direction of the transfer since we are dealing with
+            # unprocessed records which came from csv files from the bank
+            unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
             # need to build hash of account_id and account_name for the paired accounts
             # which are those most likely to be used in the post '/transfers' route
             # split here depending on Liability or Asset
             if account.category.normal == -1
-                # we are dealing with a liability account need to get paired accounts
-                if unprocessed_transfer[:direction] == -1
+                # we are dealing with a liability account
+                if unprocessed_transfer[:direction] == 1
                     # we are dealing with a debit return all expense accounts
                     unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                 else
@@ -42,7 +45,7 @@ module FinanceTracker
                     else
                         # we are dealing with a credit card reimbursement or cash back
                         # alert user to check for charge on same statement
-                        # return all expense accounts
+                        # return all expense accounts but TODO also need to return asset checking account
                         unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
                     end
                 end
@@ -72,8 +75,9 @@ module FinanceTracker
                         end
                     end
                 end
-                return unprocessed_transfer
+                #return unprocessed_transfer
             end
+=begin
             a = Augmenter.new
             str_to_match = {salary: ENV['SALARY_PATTERN'], work_reimburse: ENV['WORK_REIMBURSE_PATTERN'],
                 cc_all: ENV['CC_PATTERN'], cc1_pmt: ENV['CC1_PMT_PATTERN']}
@@ -81,6 +85,10 @@ module FinanceTracker
                 if value.match(unprocessed_transfer[:description])
                 end
             end
+=end
+            # need to reset the direction now that we have the paired accounts
+            unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
+            puts "unprocessed_transfer: #{unprocessed_transfer}"
             unprocessed_transfer
         end
         def get_paired_accounts(account_type)
@@ -102,6 +110,16 @@ module FinanceTracker
                 message = 'Invalid transfer: missing or corrupt data'
                 return RecordResult.new(false, nil, message)
             end
+            # look to see if un_pr_record_id is present and also found in the unprocessed_records table
+            unprocessed_record = nil
+            unless transfer['shared']['un_pr_record_id'].nil?
+                unprocessed_record =  DB[:unprocessed_records].where(id: transfer['shared']['un_pr_record_id']).first
+                unless unprocessed_record
+                    message = 'Invalid transfer: unprocessed record id not found in unprocessed records table'
+                    return RecordResult.new(false, nil, message)
+                end
+            end
+
             t_date_array = transfer['shared']['posted_date'].split("-")
             dt = DateTime.new(t_date_array[0].to_i, t_date_array[1].to_i,
                 t_date_array[2].to_i)
@@ -129,6 +147,10 @@ module FinanceTracker
                     user_id: transfer['shared']['user_id'],
                     account_id: transfer['credit_account_id'],
                 )
+                # if unprocessed_record is not nil then delete it
+                if unprocessed_record
+                    DB[:unprocessed_records].where(id: transfer['shared']['un_pr_record_id']).delete
+                end
             end
             RecordResult.new(true, {"debit_record_id" => record_ids["debit"], "credit_record_id" => record_ids["credit"]}, nil)
         end
@@ -212,6 +234,6 @@ module FinanceTracker
             end
             transfer_hash
         end
-        private :get_paired_accounts, :group_transfers, :validate_transfer
+        private :get_paired_accounts, :group_transfers, :validate_transfer, :get_transfer_id
     end
 end
