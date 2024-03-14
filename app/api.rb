@@ -52,6 +52,15 @@ module FinanceTracker
             result = @ledger.next_unprocessed_record
             JSON.generate(result)
         end
+        post '/next_unprocessed_record/refund/:value' do
+            puts "params[:value] = #{params[:value]}"
+            result = @ledger.refund_unprocessed_record(params[:value])
+            JSON.generate(result)
+        end
+        post '/next_unprocessed_record/skip/:value' do
+            result = @ledger.skip_unprocessed_record(params[:value])
+            JSON.generate(result)
+        end
         post '/transfers' do
             #curl -i -X POST -H "Content-Type: application/json" -d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,

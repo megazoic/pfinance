@@ -57,7 +57,8 @@ end
 
 task :import_records, [:arg1] do |t, args|
   table = CSV.parse(File.read(args[:arg1]), headers: true)
-  record_hash = {'account' => 0, 'amount' => 0, 'description' => 0, 'direction' => 0, 'posted_date' => 0}
+  record_hash = {'account' => 0, 'amount' => 0, 'description' => 0, 'direction' => 0, 'posted_date' => 0,
+  'skip' => 0, 'refund' => 0}
   rake_result= FinanceTracker::RakeResult.new(false, table.length, 0, nil)
   error_count = 0
   account_header = ""

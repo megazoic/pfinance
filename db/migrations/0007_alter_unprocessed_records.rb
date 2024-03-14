@@ -4,7 +4,10 @@ Sequel.migration do
             add_primary_key :id
             drop_column :normal
             add_column :direction, Integer, null: false
-            set_column_type :account, String
+            drop_column :account
+            add_column :account, String, null: false
+            add_column :refund, Integer, null: false, default: 0
+            add_column :skip, Integer, null: false, default: 0
         end
     end
     down do
@@ -12,7 +15,10 @@ Sequel.migration do
             drop_column :id
             add_column :normal, Integer, null: false
             drop_column :direction
-            set_column_type :account, Integer
+            drop_column :account
+            add_column :account, Integer, null: false
+            drop_column :refund
+            drop_column :skip
         end
     end
 end

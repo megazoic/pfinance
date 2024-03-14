@@ -15,9 +15,27 @@ module FinanceTracker
         end
     end
     class Ledger
+        def refund_unprocessed_record(value)
+            # get next unprocessed record that needs to be tagged as a refund
+            unprocessed_record =  DB[:unprocessed_records].where(id: value).first
+            # if no unprocessed records return empty array
+            return [] unless unprocessed_record
+            unprocessed_record[:refund] = 1
+            result = DB[:unprocessed_records].where(id: unprocessed_record[:id]).update(unprocessed_record)
+            result
+        end
+        def skip_unprocessed_record(value)
+            # get next unprocessed record that needs to be skipped
+            unprocessed_record =  DB[:unprocessed_records].where(id: value).first
+            # if no unprocessed records return empty array
+            return [] unless unprocessed_record
+            unprocessed_record[:skip] = 1
+            DB[:unprocessed_records].where(id: unprocessed_record[:id]).update(unprocessed_record)
+            unprocessed_record
+        end
         def next_unprocessed_record
             # get next unprocessed record which we assume is from either Asset or Liability account
-            unprocessed_transfer =  DB[:unprocessed_records].order(:id).first
+            unprocessed_transfer =  DB[:unprocessed_records].where(skip: 0).where(refund:0).order(:id).first
             # if no unprocessed records return empty array
             return [] unless unprocessed_transfer
             # need to switch real world account with an account from our db

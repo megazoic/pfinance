@@ -47,7 +47,9 @@ module FinanceTracker
               'description' => 'BLAHBLAH|Merchandise',
               'posted_date' => '2024-01-25',
               'direction' => "1",
-              'date' => '2024-03-09'
+              'date' => '2024-03-09',
+              'skip' => 0,
+              'refund' => 0
           }
         end
         let(:record_to_import2) do 
@@ -57,7 +59,9 @@ module FinanceTracker
               'description' => "#{ENV['BANK1']} CRDT CD  ONLINE PMT",
               'posted_date' => '2024-02-13',
               'direction' => "-1",
-              'date' => '2024-03-09'
+              'date' => '2024-03-09',
+              'skip' => 0,
+              'refund' => 0
           }
         end
         let(:record_to_import3) do
@@ -70,7 +74,9 @@ module FinanceTracker
             #'description' => "POS PCH CSH BACK  TERMINAL 99999999 BLAHBLAH",
             'posted_date' => '2024-02-13',
             'direction' => "-1",
-            'date' => '2024-03-09'
+            'date' => '2024-03-09',
+            'skip' => 0,
+            'refund' => 0
           }
         end
         let(:record_to_import4) do
@@ -81,7 +87,9 @@ module FinanceTracker
             'description' => "BLAH #{ENV['WORK_REIMBURSE']}      BLAH*VV*13456895-1-V1334300345-1*BU000.00*00.00\|",
             'posted_date' => '2024-02-13',
             'direction' => "1",
-            'date' => '2024-03-09'
+            'date' => '2024-03-09',
+            'skip' => 0,
+            'refund' => 0
           }
         end
         let(:record_to_import5) do
@@ -91,7 +99,9 @@ module FinanceTracker
             'description' => 'ELECTRONIC PAYMENT|Payment/Credit',
             'posted_date' => '2024-02-13',
             'direction' => "1",
-            'date' => '2024-03-09'
+            'date' => '2024-03-09',
+            'skip' => 0,
+            'refund' => 0
           }
         end
         let(:record_to_import6) do
@@ -101,8 +111,52 @@ module FinanceTracker
             'description' => "BLAH BLAH 310      #{ENV['SALARY']}         23440122|",
             'posted_date' => '2024-02-13',
             'direction' => "1",
-            'date' => '2024-03-09'
+            'date' => '2024-03-09',
+            'skip' => 0,
+            'refund' => 0
           }
+        end
+        let (:record_to_import7) do
+          {
+            'account' => ENV['PFINANCE_LIABILITY_1'],
+            'amount' => 1600,
+            'description' => 'BLAHBLAH|Merchandise',
+            'posted_date' => '2024-02-13',
+            'direction' => "-1",
+            'date' => '2024-03-09',
+            'skip' => 1,
+            'refund' => 0
+          }
+        end
+        let (:record_to_import8) do
+          {
+            'account' => ENV['PFINANCE_LIABILITY_1'],
+            'amount' => 1600,
+            'description' => 'BLAHBLAH|Merchandise',
+            'posted_date' => '2024-02-13',
+            'direction' => "-1",
+            'date' => '2024-03-09',
+            'skip' => 0,
+            'refund' => 1
+          }
+        end
+        it 'returns the next unprocessed record that doesn\'t have skip or refund' do
+          result7 = record_importer.import_record(record_to_import7)
+          expect(result7).to be_success
+          result8 = record_importer.import_record(record_to_import8)
+          expect(result8).to be_success
+          result1 = record_importer.import_record(record_to_import1)
+          expect(result1).to be_success
+          result = ledger.next_unprocessed_record
+          result = result.transform_keys(&:to_s)
+          result.reject! { |k,v| ['account_id', 'paired_accounts', 'posted_date', 'date',
+            'description', 'direction', 'id'].include?(k) }
+          expect(result).to include({
+            'account_name' => Account::RWA_2_ACCOUNT[ENV['PFINANCE_LIABILITY_1']],
+            'amount' => 140000,
+            'skip' => 0,
+            'refund' => 0
+          })
         end
         it 'returns the next unprocessed record' do
           result1 = record_importer.import_record(record_to_import1)

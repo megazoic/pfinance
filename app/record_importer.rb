@@ -18,7 +18,9 @@ module FinanceTracker
                 date: Date.today,
                 amount: (record_to_import["amount"].to_i * 100),
                 description: record_to_import["description"],
-                direction: record_to_import["direction"].to_i
+                direction: record_to_import["direction"].to_i,
+                skip: record_to_import["skip"],
+                refund: record_to_import["refund"]
             )
             ImportResult.new(true, record_id, nil)
         end
