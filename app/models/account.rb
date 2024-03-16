@@ -1,7 +1,7 @@
 require './.ignore/sensitive.rb'
 
 class Account < Sequel::Model
-    one_to_many :transfers
+    one_to_many :entries
     many_to_one :user
     many_to_one :category
     

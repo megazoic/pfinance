@@ -2,6 +2,7 @@
 class Category < Sequel::Model
     many_to_one :parent, class: self
     one_to_many :children, key: :parent_id, class: self
+    one_to_many :accounts
     def return_ancestors
         ancestors = []
         current = self

@@ -4,7 +4,7 @@ RSpec.configure do |c|
         Sequel.extension :migration
         Sequel::Migrator.run(DB, 'db/migrations')
         # empties the tables
-        DB[:transfers, :accounts, :users, :categories, :unprocessed_records,
+        DB[:transactions, :entries, :accounts, :users, :categories, :unprocessed_records,
             :import_logs].truncate(cascade: true)
     end
     c.around(:example, :db) do |example|

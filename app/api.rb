@@ -4,7 +4,8 @@ require 'json'
 require_relative 'ledger'
 require './app/models/account'
 require './app/models/category'
-require './app/models/transfer'
+require './app/models/transaction'
+require './app/models/entry'
 require './app/models/user'
 require_relative 'augmenter'
 
@@ -146,6 +147,23 @@ module FinanceTracker
         get '/users/:id' do
             result = @augmenter.get_records(:users, params[:id])
             JSON.generate(result)
+        end
+        get '/test' do
+            h = {
+                :posted_date => "2024-02-11", :transactions => [
+                  {:description => "1blahblah",
+                     :entries => {
+                        :debit => {:account_id => "value5", :amount => "value6"},
+                        :credit => {:account_id => "value8", :amount => "value9"}}
+                  },
+                  {:description => "2blahblah",
+                     :entries => {
+                        :debit => {:account_id => "value5", :amount => "value6"},
+                        :credit => {:account_id => "value8", :amount => "value9"}}
+                  }
+               ]
+            }
+            JSON.generate(h)
         end
         options "*" do
             response.headers["Allow"] = "GET, PUT, POST, DELETE, OPTIONS"

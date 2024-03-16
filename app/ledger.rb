@@ -3,8 +3,10 @@ require 'json'
 require_relative '../config/sequel'
 require_relative './models/account'
 require_relative './models/category'
+require_relative './models/entry'
 require_relative './augmenter'
 require_relative './record_importer.rb'
+require_relative './models/transaction'
 
 module FinanceTracker
     RecordResult = Struct.new(:success?, :transfer_ids, :error_message)
@@ -133,36 +135,37 @@ module FinanceTracker
             t_date_array = transfer['shared']['posted_date'].split("-")
             dt = DateTime.new(t_date_array[0].to_i, t_date_array[1].to_i,
                 t_date_array[2].to_i)
-            transfer_id = get_transfer_id(dt.to_date)
             record_ids = Hash.new
             DB.transaction do
-                transfer_records =  DB[:transfers]
-                # for debit side, money is going into this account
-                record_ids["debit"] = transfer_records.insert(
-                    transfer_id: transfer_id,
+                transactions =  DB[:transactions]
+                entries =  DB[:entries]
+                # need to set up a transaction
+                record_ids["transaction_id"] = transactions.insert(
                     posted_date: dt.to_date,
-                    date: DateTime.now.to_date,
-                    direction: 1,
-                    amount: transfer['shared']['amount'],
-                    user_id: transfer['shared']['user_id'],
+                    description: transfer['shared']['description'],
+                    user_id: transfer['shared']['user_id']
+                )
+                # for debit side, money is going into this account
+                record_ids["debit"] = entries.insert(
+                    transaction_id: record_ids["transaction_id"],
                     account_id: transfer['debit_account_id'],
+                    amount: transfer['shared']['amount'],
+                    direction: 1
                 )
                 # for credit side
-                record_ids["credit"] = transfer_records.insert(
-                    transfer_id: transfer_id,
-                    posted_date: dt.to_date,
-                    date: DateTime.now.to_date,
-                    direction: -1,
-                    amount: transfer['shared']['amount'],
-                    user_id: transfer['shared']['user_id'],
+                record_ids["credit"] = entries.insert(
+                    transaction_id: record_ids["transaction_id"],
                     account_id: transfer['credit_account_id'],
+                    amount: transfer['shared']['amount'],
+                    direction: -1
                 )
                 # if unprocessed_record is not nil then delete it
                 if unprocessed_record
                     DB[:unprocessed_records].where(id: transfer['shared']['un_pr_record_id']).delete
                 end
             end
-            RecordResult.new(true, {"debit_record_id" => record_ids["debit"], "credit_record_id" => record_ids["credit"]}, nil)
+            RecordResult.new(true, {"debit_record_id" => record_ids["debit"],  "credit_record_id" => record_ids["credit"],
+                "transaction_id" => record_ids["transaction_id"]}, nil)
         end
         def get_transfer_id(dt)
             #first, look for transaction transfer_id
@@ -208,42 +211,22 @@ module FinanceTracker
             dt = DateTime.new(t_date_array[0].to_i, t_date_array[1].to_i,
             t_date_array[2].to_i)
             #expecting two ids per transaction and want to pacakage accordingly
-            result_array = DB[:transfers].where(posted_date: dt.to_date).all
-            group_transfers(result_array)
-        end
-        def group_transfers(transfers_array)
-            transfer_record_complete = false
-            transfer_hash = Hash.new
-            count = 0
-            transfers_array.each do |transfer_record|
-                transaction_id = "#{transfer_record[:posted_date].to_s}_#{transfer_record[:transfer_id]}"
-                if transfer_hash.has_key?(transaction_id)
-                    if transfer_record[:direction] == -1 #credit directions always -1
-                        transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
-                        transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
+            transactions_on_date = DB[:transactions].where(posted_date: dt.to_date).select(:id, :description).all
+            #want the entries for each transaction
+            transaction_hash = {posted_date: dt.to_date, transactions: []}
+            t = Transaction
+            transactions_on_date.each do |t_id|
+                transaction_hash[:transactions] << {description: t_id[:description], entries: {}}
+                t[t_id[:id]].entries.each do |e|
+                    if e.direction == 1
+                        transaction_hash[:transactions].last[:entries][:debit] = {account_id: e.account_id, amount: e.amount}
                     else
-                        transfer_hash[transaction_id]["debit_account_id"] = transfer_record[:account_id]
-                        transfer_hash[transaction_id]["debit_record_id"] = transfer_record[:id]
-                    end
-                else
-                    #starting with a new hash
-                    transfer_hash[transaction_id] = {"shared" => {}, "credit_account_id" => nil, "debit_account_id" => nil,
-                    "credit_record_id" => nil, "debit_record_id" => nil}
-                    shared_hash = {"posted_date" => transfer_record[:posted_date], "amount" => transfer_record[:amount],
-                        "user_id" => transfer_record[:user_id]}
-                    transfer_hash[transaction_id]["shared"] = shared_hash
-                    if transfer_record[:direction] == -1 #credit directions always -1
-                        transfer_hash[transaction_id]["credit_account_id"] = transfer_record[:account_id]
-                        transfer_hash[transaction_id]["credit_record_id"] = transfer_record[:id]
-                    else
-                        transfer_hash[transaction_id]["debit_account_id"] = transfer_record[:account_id]
-                        transfer_hash[transaction_id]["debit_record_id"] = transfer_record[:id]
+                        transaction_hash[:transactions].last[:entries][:credit] = {account_id: e.account_id, amount: e.amount}
                     end
                 end
-                count = count +1
             end
-            transfer_hash
+            transaction_hash
         end
-        private :get_paired_accounts, :group_transfers, :validate_transfer, :get_transfer_id
+        private :get_paired_accounts, :validate_transfer
     end
 end

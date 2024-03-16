@@ -28,7 +28,8 @@ module FinanceTracker
           'posted_date' => '2024-01-23',
           'amount' => 14000,
           'user_id' => 1,
-          'category_id' => 1
+          'category_id' => 1,
+          'description' => 'BLAHBLAH|Merchandise',
         },
         'debit_account_id' => 1,
         'credit_account_id' => 2
@@ -212,12 +213,18 @@ module FinanceTracker
           result = ledger.record(transfer)
 
           expect(result).to be_success
-          expect(DB[:transfers].select(:id, :posted_date).all).to match [a_hash_including(
+          expect(DB[:entries].count).to eq(2)
+          expect(DB[:transactions].count).to eq(1)
+          expect(DB[:entries].select(:id, :amount, :account_id, :direction).all).to match [a_hash_including(
             id: result.transfer_ids["debit_record_id"],
-            posted_date: Date.iso8601('2024-01-23')
+            amount: 14000,
+            account_id: 1,
+            direction: 1
           ), a_hash_including(
             id: result.transfer_ids["credit_record_id"],
-            posted_date: Date.iso8601('2024-01-23')
+            amount: 14000,
+            account_id: 2,
+            direction: -1
           )]
         end
       end
@@ -231,7 +238,7 @@ module FinanceTracker
           expect(result.transfer_ids).to eq(nil)
           expect(result.error_message).to include('Invalid transfer: missing or corrupt data')
 
-          expect(DB[:transfers].count).to eq(0)
+          expect(DB[:transactions].count).to eq(0)
         end
       end
       context 'when the transfer comes from an unprocessed record' do
@@ -241,7 +248,8 @@ module FinanceTracker
           transfer['shared']['un_pr_record_id'] = 1
           result = ledger.record(transfer)
           expect(result).to be_success
-          expect(DB[:transfers].count).to eq(2)
+          expect(DB[:transactions].count).to eq(1)
+          expect(DB[:entries].count).to eq(2)
           expect(DB[:unprocessed_records].count).to eq(0)
         end
         it 'rejects the transfer and does not delete the unprocessed record when it is invalid' do
@@ -251,7 +259,7 @@ module FinanceTracker
           transfer['debit_account_id'] = nil
           result = ledger.record(transfer)
           expect(result).not_to be_success
-          expect(DB[:transfers].count).to eq(0)
+          expect(DB[:transactions].count).to eq(0)
           expect(DB[:unprocessed_records].count).to eq(1)
         end
       end
@@ -259,22 +267,34 @@ module FinanceTracker
     describe '#transfers_on' do
       it 'returns all transfers for the provided date' do
         result_1 = ledger.record(transfer.deep_merge({'shared' => {'posted_date' => '2017-06-10'}}))
-        result_2 = ledger.record(transfer.deep_merge({'shared' => {'posted_date' => '2017-06-10'}}))
-        result_3 = ledger.record(transfer.deep_merge({'shared' => {'posted_date' => '2017-06-11'}}))
+        expect(result_1).to be_success
+        result_2 = ledger.record(transfer.deep_merge({'shared' => {'posted_date' => '2017-06-10',
+          'amount' => 15000}}))
+        expect(result_2).to be_success
+        result_3 = ledger.record(transfer.deep_merge({'shared' => {'posted_date' => '2017-06-11',
+          'amount' => 16000}}))
+        expect(result_3).to be_success
+
         lt = ledger.transfers_on('2017-06-10')
         test_array = []
-        lt.each do |k,v|
-          test_array << {:transfer_ids => {"debit_record_id" => v["debit_record_id"], "credit_record_id" => v["credit_record_id"]}}
-        end
+        test_array[0] = lt[:posted_date].to_s
+        test_array[1] = lt[:transactions][0][:entries][:debit]
+        test_array[2] = lt[:transactions][0][:entries][:credit]
+        # will only look at the first transfer
+        amt1_debit = DB[:entries].where(id: result_1.transfer_ids["debit_record_id"]).get(:amount)
+        amt1_credit = DB[:entries].where(id: result_1.transfer_ids["credit_record_id"]).get(:amount)
 
-        expect(test_array).to contain_exactly(
-          a_hash_including(transfer_ids: result_1["transfer_ids"]),
-          a_hash_including(transfer_ids: result_2["transfer_ids"])
-        )
+        expect(test_array[0]).to eq('2017-06-10')
+        expect(test_array[1][:amount]).to eq(amt1_debit)
+        expect(test_array[2][:amount]).to eq(amt1_credit)
       end
 
       it 'returns a blank array when there are no matching transfers' do
-        expect(ledger.transfers_on('2017-06-10')).to eq({})
+        test_array = []
+        lt = ledger.transfers_on('2017-06-10')
+        test_array[0] = lt[:posted_date].to_s
+        test_array[1] = lt[:transactions]
+        expect(test_array[1]).to eq([])
       end
     end
   end
