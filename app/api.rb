@@ -81,6 +81,9 @@ module FinanceTracker
             result = @ledger.transfers_on(params[:date])
             JSON.generate(result)
         end
+        post '/transfers' do
+            puts "in transfers"
+        end
         post '/accounts' do
             account = JSON.parse(request.body.read)
             result = @augmenter.create(account, :accounts)
