@@ -105,10 +105,19 @@ module FinanceTracker
         end
         def get_paired_accounts(account_type)
             root_cat = Category.where(name: account_type).first
-            all_cats = root_cat.get_cats_as_nested_array.flatten
-            paired_accounts = {}
-            all_cats.each do |cat|
-                accounts = Account.where(category_id: cat[:id]).all
+            #check if root_cat has descendants
+            if root_cat.has_descendants?
+                all_cats = root_cat.return_descendants
+                paired_accounts = {}
+                all_cats.each do |cat|
+                    accounts = Account.where(category_id: cat[:id]).all
+                    accounts.each do |account|
+                        paired_accounts[account.values[:id]] = account.values[:name]
+                    end
+                end
+            else
+                accounts = Account.where(category_id: root_cat.id).all
+                paired_accounts = {}
                 accounts.each do |account|
                     paired_accounts[account.values[:id]] = account.values[:name]
                 end

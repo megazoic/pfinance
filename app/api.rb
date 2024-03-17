@@ -24,7 +24,7 @@ module FinanceTracker
             super()
         end
         get '/categories' do
-            result = @augmenter.get_records(:categories)
+            result = @augmenter.get_category_records
             JSON.generate(result)
         end
         get '/categories/flat' do
@@ -80,9 +80,6 @@ module FinanceTracker
         get '/transfers/:date' do
             result = @ledger.transfers_on(params[:date])
             JSON.generate(result)
-        end
-        post '/transfers' do
-            puts "in transfers"
         end
         post '/accounts' do
             account = JSON.parse(request.body.read)
