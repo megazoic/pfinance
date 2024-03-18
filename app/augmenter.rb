@@ -146,5 +146,24 @@ module FinanceTracker
         def get_accounts_w_user_id(id)
             records = DB[:accounts].where(user_id: id).all
         end
+        def build_cat_json
+            categories = Category.where(parent_id: nil) # Assuming top-level categories have parent_id: nil
+            json = categories.map do |category|
+              build_category_hash(category)
+            end
+            json.to_json
+        end
+          
+        def build_category_hash(category, level = 1)
+            hash = {
+              "level#{level}": category.name,
+              "accounts": category.accounts.map { |account| account.name }
+            }
+            subcategories = Category.where(parent_id: category.id)
+            subcategories.each do |subcategory|
+              hash.merge!(build_category_hash(subcategory, level + 1))
+            end
+            hash
+        end        
     end
 end

@@ -23,20 +23,37 @@ module FinanceTracker
             @ledger = ledger
             super()
         end
-        get '/categories' do
-            result = @augmenter.get_category_records
-            JSON.generate(result)
+        get '/categories/:detail' do
+            case params[:detail]
+            when 'flat'
+                #don't need to pass in anything
+            when 'hierarchical'
+                #as_hierarchy = true
+            when 'accounts'
+                #as_accounts = true and as_hierarchy = true
+                result = @augmenter.get_category_records(nil, true, true)
+            else
+                status 404
+                JSON.generate('error' => 'invalid detail')
+            end
+            json_result = JSON.generate(result)
+            puts "json_result = #{json_result}"
+            json_result
+        end
+        get '/catnaccounts' do
+            output = @augmenter.build_cat_json
+            output
         end
         get '/categories/flat' do
             result = @augmenter.get_categories_flat
             JSON.generate(result)
         end
         get '/categories/:id' do
-            result = @augmenter.get_records(:categories, params[:id])
+            result = @augmenter.get_category_records(params[:id], false, false)
             JSON.generate(result)
         end
         get '/categories/parent_id/:value' do
-            result = @augmenter.get_records(:categories, nil, params[:value])
+            result = @augmenter.get_records(params[:value], true, true)
             JSON.generate(result)
         end
         post '/categories' do
@@ -112,11 +129,11 @@ module FinanceTracker
             JSON.generate(result)
         end
         get '/accounts' do
-            result = @augmenter.get_records(:accounts)
+            result = @augmenter.get_account_records
             JSON.generate(result)
         end
         get '/accounts/:id' do
-            result = @augmenter.get_records(:accounts, params[:id])
+            result = @augmenter.get_account_records(params[:id])
             JSON.generate(result)
         end
         post '/users' do
@@ -141,11 +158,11 @@ module FinanceTracker
             end
         end
         get '/users' do
-            result = @augmenter.get_records(:users)
+            result = @augmenter.get_user_records
             JSON.generate(result)
         end
         get '/users/:id' do
-            result = @augmenter.get_records(:users, params[:id])
+            result = @augmenter.get_user_records( params[:id])
             JSON.generate(result)
         end
         get '/test' do
