@@ -165,6 +165,34 @@ module FinanceTracker
             result = @augmenter.get_user_records( params[:id])
             JSON.generate(result)
         end
+        post '/add_new_transaction' do
+            transaction = JSON.parse(request.body.read)
+            #the transaction is:
+            #{"date"=>"2022-02-10", "notes"=>"some notes", "description"=>"a desc",
+            # "amount"=>"200", "debit"=>"1", "credit"=>"2"}
+            # leger.record(transaction) expects the following:
+            #-d "{\"shared\":{\"posted_date\":\"2024-02-23\",
+            #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,
+            #\"credit_account_id\":2}"
+            data = {
+                :shared.to_s => {
+                    :posted_date.to_s => transaction["date"],
+                    :amount.to_s => transaction["amount"],
+                    :user_id.to_s => 1,
+                    :notes.to_s => transaction["notes"],
+                    :description.to_s => transaction["description"]
+                },
+                :debit_account_id.to_s => transaction["debit"],
+                :credit_account_id.to_s => transaction["credit"]
+            }
+            result = @ledger.record(data)
+            if result.success?
+                JSON.generate('result' => "success")
+            else
+                status 422
+                JSON.generate('error' => result.error_message)
+            end
+        end
         get '/test' do
             h = {
                 :posted_date => "2024-02-11", :transactions => [

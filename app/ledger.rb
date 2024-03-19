@@ -152,6 +152,7 @@ module FinanceTracker
                 record_ids["transaction_id"] = transactions.insert(
                     posted_date: dt.to_date,
                     description: transfer['shared']['description'],
+                    notes: transfer['shared']['notes'],
                     user_id: transfer['shared']['user_id']
                 )
                 # for debit side, money is going into this account
@@ -193,6 +194,7 @@ module FinanceTracker
             temp_transfer_id
         end
         def validate_transfer(transfer)
+            puts "transfer = #{transfer}"
             # are ids valid?
             is_valid = {"user" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
