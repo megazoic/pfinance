@@ -29,9 +29,9 @@ module FinanceTracker
                         user_name = DB[:users].where(id: record[:user_id]).first[:name]
                         record[:user_name] = user_name
                     end
-                    category_name = DB[:categories].where(id: record[:category_id]).first[:name]
-                    record[:category_name] = category_name
-                    record.delete(:category_id)
+                    category = DB[:categories].where(id: record[:category_id]).first
+                    record[:category_name] = category[:name]
+                    record[:category_id] = category[:id]
                 end
             else
                 #we are getting a single account
@@ -132,6 +132,7 @@ module FinanceTracker
             records.each do |record|
                 record.delete(:parent_id)
             end
+            records
         end
         def get_accounts_w_normal(normal)
             accounts = Account.all
@@ -153,17 +154,17 @@ module FinanceTracker
             end
             json.to_json
         end
-          
         def build_category_hash(category, level = 1)
             hash = {
               "level#{level}": category.name,
-              "accounts": category.accounts.map { |account| account.name }
+              "accounts": category.accounts.map { |account| account.name },
+              "subcategories": []
             }
             subcategories = Category.where(parent_id: category.id)
             subcategories.each do |subcategory|
-              hash.merge!(build_category_hash(subcategory, level + 1))
+              hash[:subcategories] << build_category_hash(subcategory, level + 1)
             end
             hash
-        end        
+        end
     end
 end

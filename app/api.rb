@@ -24,9 +24,11 @@ module FinanceTracker
             super()
         end
         get '/categories/:detail' do
+            result = {}
             case params[:detail]
             when 'flat'
                 #don't need to pass in anything
+                result = @augmenter.get_categories_flat
             when 'hierarchical'
                 #as_hierarchy = true
             when 'accounts'
@@ -37,8 +39,6 @@ module FinanceTracker
                 JSON.generate('error' => 'invalid detail')
             end
             json_result = JSON.generate(result)
-            puts "json_result = #{json_result}"
-            json_result
         end
         get '/catnaccounts' do
             output = @augmenter.build_cat_json

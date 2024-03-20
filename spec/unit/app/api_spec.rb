@@ -120,8 +120,7 @@ module FinanceTracker
         describe 'GET /users' do
             before do
                 return_value = 'users'
-                allow(augmenter).to receive(:get_records)
-                .with(:users)
+                allow(augmenter).to receive(:get_user_records)
                 .and_return(*return_value)
             end
             it 'returns a list of users as JSON' do
