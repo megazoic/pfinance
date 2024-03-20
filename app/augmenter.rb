@@ -157,7 +157,7 @@ module FinanceTracker
         def build_category_hash(category, level = 1)
             hash = {
               "level#{level}": category.name,
-              "accounts": category.accounts.map { |account| account.name },
+              "accounts": category.accounts.map { |account| {account_name: account.name, account_id: account.id} },
               "subcategories": []
             }
             subcategories = Category.where(parent_id: category.id)

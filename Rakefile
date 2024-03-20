@@ -38,7 +38,11 @@ task :load_dev_db do
   DB[:accounts].truncate(cascade: true)
   DB[:categories].truncate(cascade: true)
   DB[:users].truncate(cascade: true)
-  DB[:users].insert(id: 1, name: "Nick")
+  DB[:entries].truncate(cascade: true)
+  DB[:transactions].truncate(cascade: true)
+  nick = DB[:users].insert(name: "Nick")
+  irma = DB[:users].insert(name: "Irma")
+  household = DB[:users].insert(name: "Household")
   DB[:categories].insert(id: 1, name: "Revenue", normal: -1)
   DB[:categories].insert(id: 2, name: "Assets", normal: 1)
   DB[:categories].insert(id: 3, name: "Expense", normal: 1)
@@ -53,6 +57,10 @@ task :load_dev_db do
   DB[:accounts].insert(id: 4, name: "Expense_1", category_id: 6)
   DB[:accounts].insert(id: 5, name: "Expense_2", category_id: 8)
   DB[:accounts].insert(id: 6, name: "Revenue_1", category_id: 1)
+  tr1 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: nick)
+  tr2 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: irma)
+  tr3 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: household)
+  
 end
 
 task :import_records, [:arg1] do |t, args|

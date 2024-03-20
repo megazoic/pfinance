@@ -80,6 +80,7 @@ module FinanceTracker
             JSON.generate(result)
         end
         post '/transfers' do
+            # {"shared"=>{"posted_date"=>"2024-02-23", "amount"=>14000, "user_id"=>1}, "debit_account_id"=>1, "credit_account_id"=>2}
             #curl -i -X POST -H "Content-Type: application/json" -d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,
             #\"credit_account_id\":2}"  http://localhost:9292/transfers
@@ -166,6 +167,7 @@ module FinanceTracker
             JSON.generate(result)
         end
         post '/add_new_transaction' do
+            #transactions are generated denovo from web form
             transaction = JSON.parse(request.body.read)
             #the transaction is:
             #{"date"=>"2022-02-10", "notes"=>"some notes", "description"=>"a desc",
@@ -187,7 +189,8 @@ module FinanceTracker
             }
             result = @ledger.record(data)
             if result.success?
-                JSON.generate('result' => "success")
+                #just interested in the total balance
+                JSON.generate({net_balance: @ledger.calculate_account_balances(true)})
             else
                 status 422
                 JSON.generate('error' => result.error_message)

@@ -194,7 +194,6 @@ module FinanceTracker
             temp_transfer_id
         end
         def validate_transfer(transfer)
-            puts "transfer = #{transfer}"
             # are ids valid?
             is_valid = {"user" => 0, "debit_account" => 0, "date" => 0,
             "credit_account" => 0, "amount" => 0}
@@ -238,6 +237,28 @@ module FinanceTracker
             end
             transaction_hash
         end
+        def calculate_account_balances(net_ab = false)
+            if net_ab == true
+                #return net balance for all accounts
+                net_balance = 0
+                Account.each do |account|
+                    normal = account.category.normal
+                    balance = account.entries.sum { |entry| entry.amount * normal * entry.direction }
+                    net_balance += balance * normal
+                end
+                return net_balance
+            else
+                balances = {}
+        
+                Account.each do |account|
+                  normal = account.category.normal
+                  balance = account.entries.sum { |entry| entry.amount * normal * entry.direction }
+                  balances[account.name] = balance
+                end
+            
+                return balances
+                end
+        end        
         private :get_paired_accounts, :validate_transfer
     end
 end

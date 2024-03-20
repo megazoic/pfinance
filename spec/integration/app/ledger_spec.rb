@@ -5,6 +5,7 @@ module FinanceTracker
     before(:example) do
             # set up for testing transfers & unprocessed_records table
             DB[:users].insert(id: 1, name: "Nick")
+            DB[:users].insert(id: 2, name: "Sally")
             DB[:categories].insert(id: 1, name: "Revenue", normal: -1)
             DB[:categories].insert(id: 2, name: "Assets", normal: 1)
             DB[:categories].insert(id: 3, name: "Expense", normal: 1)
@@ -13,12 +14,14 @@ module FinanceTracker
             DB[:categories].insert(id: 6, name: "DiscretionarySpending", normal: 1, parent_id: 3)
             DB[:categories].insert(id: 7, name: "Checking", normal: 1, parent_id: 2)
             DB[:categories].insert(id: 8, name: "NonDiscSpending", normal: 1, parent_id: 3)
+            DB[:categories].insert(id: 9, name: "Equity", normal: -1)
             DB[:accounts].insert(id: 1, name: "Liability_1", category_id: 5)
             DB[:accounts].insert(id: 2, name: "Liability_2", category_id: 5)
             DB[:accounts].insert(id: 3, name: "Asset_1", category_id: 7)
             DB[:accounts].insert(id: 4, name: "Expense_1", category_id: 6)
             DB[:accounts].insert(id: 5, name: "Expense_2", category_id: 8)
             DB[:accounts].insert(id: 6, name: "Revenue_1", category_id: 1)
+            DB[:accounts].insert(id: 7, name: "Equity_1", category_id: 9)
     end
 
     let(:ledger) { Ledger.new }
@@ -261,6 +264,72 @@ module FinanceTracker
           expect(result).not_to be_success
           expect(DB[:transactions].count).to eq(0)
           expect(DB[:unprocessed_records].count).to eq(1)
+        end
+      end
+      context 'with transactons and entries to balance' do
+        let(:transfer1) do
+          {
+            'shared' => {
+              'posted_date' => '2024-01-23',
+              'amount' => 14000,
+              'user_id' => 1,
+              'description' => 'BLAHBLAH|Merchandise',
+            },
+            'debit_account_id' => 4,
+            'credit_account_id' => 1
+          }
+        end
+        let(:transfer2) do
+          {
+            'shared' => {
+              'posted_date' => '2024-01-23',
+              'amount' => 14000,
+              'user_id' => 1,
+              'description' => 'BLAHBLAH|Pay off credit card',
+            },
+            'debit_account_id' => 1,
+            'credit_account_id' => 3
+          }
+        end
+        let(:transfer3) do
+          {
+            'shared' => {
+              'posted_date' => '2024-01-20',
+              'amount' => 15000,
+              'user_id' => 1,
+              'description' => 'BLAHBLAH|Load money into checking account',
+            },
+            'debit_account_id' => 3,
+            'credit_account_id' => 7
+          }
+        end
+        let(:transfer4) do
+          {
+            'shared' => {
+              'posted_date' => '2024-02-28',
+              'amount' => 1600000,
+              'user_id' => 2,
+              'description' => 'BLAHBLAH|Record a paycheck',
+            },
+            'debit_account_id' => 3,
+            'credit_account_id' => 6
+          }
+        end
+        it 'returns a hash for the account balance of all accounts' do
+          #need to load the transactions table and entries table with some data
+          #to test the account balance. this is the format of the data that is sent to Ledger#record(transfer)
+          #{"shared"=>{"posted_date"=>"2024-02-23", "description"=>"a desc", "amount"=>14000, "user_id"=>1}, "debit_account_id"=>1, "credit_account_id"=>2}
+          result1 = ledger.record(transfer1)
+          expect(result1).to be_success
+          result2 = ledger.record(transfer2)
+          expect(result2).to be_success
+          result3 = ledger.record(transfer3)
+          expect(result3).to be_success
+          result4 = ledger.record(transfer4)
+          expect(result4).to be_success
+          balance = ledger.calculate_account_balances
+          expect(balance).to include({"Asset_1" => 1601000, "Equity_1" => 15000, "Expense_1" => 14000,
+            "Expense_2" => 0, "Liability_1" => 0, "Liability_2" => 0, "Revenue_1" => 1600000})
         end
       end
     end
