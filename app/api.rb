@@ -137,6 +137,10 @@ module FinanceTracker
             result = @augmenter.get_account_records(params[:id])
             JSON.generate(result)
         end
+        get '/account_balances' do
+            l = Ledger.new
+            JSON.generate(l.calculate_account_balances)
+        end
         post '/users' do
             user = JSON.parse(request.body.read)
             result = @augmenter.create(user, :users)
