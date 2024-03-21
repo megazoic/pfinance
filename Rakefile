@@ -34,33 +34,10 @@ namespace :db do
       #migrate.call(0)
     end
 end
-task :load_dev_db do
-  DB[:accounts].truncate(cascade: true)
-  DB[:categories].truncate(cascade: true)
-  DB[:users].truncate(cascade: true)
-  DB[:entries].truncate(cascade: true)
-  DB[:transactions].truncate(cascade: true)
-  nick = DB[:users].insert(name: "Nick")
-  irma = DB[:users].insert(name: "Irma")
-  household = DB[:users].insert(name: "Household")
-  DB[:categories].insert(id: 1, name: "Revenue", normal: -1)
-  DB[:categories].insert(id: 2, name: "Assets", normal: 1)
-  DB[:categories].insert(id: 3, name: "Expense", normal: 1)
-  DB[:categories].insert(id: 4, name: "Liabilities", normal: -1)
-  DB[:categories].insert(id: 5, name: "CreditCard", normal: -1, parent_id: 4)
-  DB[:categories].insert(id: 6, name: "DiscretionarySpending", normal: 1, parent_id: 3)
-  DB[:categories].insert(id: 7, name: "Checking", normal: 1, parent_id: 2)
-  DB[:categories].insert(id: 8, name: "NonDiscSpending", normal: 1, parent_id: 3)
-  DB[:accounts].insert(id: 1, name: "Liability_1", category_id: 5)
-  DB[:accounts].insert(id: 2, name: "Liability_2", category_id: 5)
-  DB[:accounts].insert(id: 3, name: "Asset_1", category_id: 7)
-  DB[:accounts].insert(id: 4, name: "Expense_1", category_id: 6)
-  DB[:accounts].insert(id: 5, name: "Expense_2", category_id: 8)
-  DB[:accounts].insert(id: 6, name: "Revenue_1", category_id: 1)
-  tr1 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: nick)
-  tr2 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: irma)
-  tr3 = DB[:transactions].insert(description: "test", posted_date: "2020-01-01", user_id: household)
-  
+task :load_dev_db, [:filename] do |t, args|
+  File.foreach(args[:filename]) do |line|
+    eval(line)
+  end
 end
 
 task :import_records, [:arg1] do |t, args|
