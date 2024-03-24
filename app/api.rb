@@ -137,9 +137,12 @@ module FinanceTracker
             result = @augmenter.get_account_records(params[:id])
             JSON.generate(result)
         end
-        get '/account_balances' do
-            l = Ledger.new
-            JSON.generate(l.calculate_account_balances)
+        get '/account_balances/:net' do
+            if params[:net] == 'true'
+                return JSON.generate(@ledger.calculate_account_balances(true))
+            else
+                return JSON.generate(@ledger.calculate_account_balances)
+            end
         end
         post '/users' do
             user = JSON.parse(request.body.read)
