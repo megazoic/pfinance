@@ -258,7 +258,7 @@ module FinanceTracker
                 Account.each do |account|
                     normal = account.category.normal
                     account_balance = single_account_balance.call(account)
-                    net_balance += account_balance * normal
+                    net_balance += account_balance# * normal
                 end
                 #need to account for fact that the amount is stored as an integer not floating point
                 net_balance = net_balance/100.0
