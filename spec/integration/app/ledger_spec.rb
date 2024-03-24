@@ -220,12 +220,14 @@ module FinanceTracker
           expect(DB[:transactions].count).to eq(1)
           expect(DB[:entries].select(:id, :amount, :account_id, :direction).all).to match [a_hash_including(
             id: result.transfer_ids["debit_record_id"],
-            amount: 14000,
+            #need to account for the fact that the amount is stored as an integer and was multiplied by 100
+            amount: 1400000,
             account_id: 1,
             direction: 1
           ), a_hash_including(
             id: result.transfer_ids["credit_record_id"],
-            amount: 14000,
+            #need to account for the fact that the amount is stored as an integer and was multiplied by 100
+            amount: 1400000,
             account_id: 2,
             direction: -1
           )]
@@ -352,6 +354,9 @@ module FinanceTracker
         # will only look at the first transfer
         amt1_debit = DB[:entries].where(id: result_1.transfer_ids["debit_record_id"]).get(:amount)
         amt1_credit = DB[:entries].where(id: result_1.transfer_ids["credit_record_id"]).get(:amount)
+        #need to account for the fact that the amount is stored as an integer and was multiplied by 100
+        amt1_debit = (amt1_debit.to_f / 100)
+        amt1_credit = (amt1_credit.to_f / 100)
 
         expect(test_array[0]).to eq('2017-06-10')
         expect(test_array[1][:amount]).to eq(amt1_debit)

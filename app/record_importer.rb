@@ -16,6 +16,7 @@ module FinanceTracker
                 account: record_to_import["account"],
                 posted_date: Date.iso8601(record_to_import["posted_date"]),
                 date: Date.today,
+                # amounts stored as integers in cents
                 amount: (record_to_import["amount"].to_i * 100),
                 description: record_to_import["description"],
                 direction: record_to_import["direction"].to_i,

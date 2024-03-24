@@ -46,6 +46,9 @@ module FinanceTracker
             unprocessed_transfer[:account_id] = account.id
             unprocessed_transfer[:account_name] = account.name
             unprocessed_transfer.delete(:account)
+            # need to adjust the amount that was stored (see record_importer.rb)
+            #as an integer by multiplying by 100
+            unprocessed_transfer[:amount] = unprocessed_transfer[:amount].to_f/100
             # need to reverse the direction of the transfer since we are dealing with
             # unprocessed records which came from csv files from the bank
             unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
@@ -126,6 +129,8 @@ module FinanceTracker
         end
         def record(transfer)
             # validate data
+            #first, we adjust the amount to be stored as an integer by multiplying by 100
+            transfer['shared']['amount'] = (transfer['shared']['amount'].to_f * 100).to_i
             validated = validate_transfer(transfer)
             unless validated
                 message = 'Invalid transfer: missing or corrupt data'
@@ -229,9 +234,10 @@ module FinanceTracker
                 transaction_hash[:transactions] << {description: t_id[:description], entries: {}}
                 t[t_id[:id]].entries.each do |e|
                     if e.direction == 1
-                        transaction_hash[:transactions].last[:entries][:debit] = {account_id: e.account_id, amount: e.amount}
+                        #need to divide by 100 to get the amount in dollars
+                        transaction_hash[:transactions].last[:entries][:debit] = {account_id: e.account_id, amount: ((e.amount.to_f)/100)}
                     else
-                        transaction_hash[:transactions].last[:entries][:credit] = {account_id: e.account_id, amount: e.amount}
+                        transaction_hash[:transactions].last[:entries][:credit] = {account_id: e.account_id, amount: ((e.amount.to_f)/100)}
                     end
                 end
             end
@@ -243,8 +249,12 @@ module FinanceTracker
                 net_balance = 0
                 Account.each do |account|
                     normal = account.category.normal
-                    balance = account.entries.sum { |entry| entry.amount * normal * entry.direction }
+                    #need to account for fact that the amount is stored as an integer not floating point
+                    balance = account.entries.sum { |entry| ((entry.amount.to_f)/100) * normal * entry.direction }
                     net_balance += balance * normal
+                end
+                if (net_balance < 1 && net_balance > -1)
+                    net_balance = 0
                 end
                 return net_balance
             else
@@ -252,12 +262,16 @@ module FinanceTracker
         
                 Account.each do |account|
                   normal = account.category.normal
-                  balance = account.entries.sum { |entry| entry.amount * normal * entry.direction }
+                  balance = account.entries.sum { |entry| ((entry.amount.to_f)/100) * normal * entry.direction }
                   balances[account.name] = balance
                 end
-            
-                return balances
+                balances.each do |key, value|
+                    if (value < 1 && value > -1)
+                        balances[key] = 0
+                    end
                 end
+                return balances
+            end
         end        
         private :get_paired_accounts, :validate_transfer
     end
