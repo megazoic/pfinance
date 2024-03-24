@@ -157,7 +157,7 @@ module FinanceTracker
             'description', 'direction', 'id'].include?(k) }
           expect(result).to include({
             'account_name' => Account::RWA_2_ACCOUNT[ENV['PFINANCE_LIABILITY_1']],
-            'amount' => 140000,
+            'amount' => 1400,
             'skip' => 0,
             'refund' => 0
           })
@@ -173,7 +173,7 @@ module FinanceTracker
             'description', 'direction', 'id'].include?(k) }
           expect(result).to include({
             'account_name' => Account::RWA_2_ACCOUNT[ENV['PFINANCE_LIABILITY_1']],
-            'amount' => 140000
+            'amount' => 1400
           })
         end
         it 'returns Expense as paired_accounts' do
@@ -273,7 +273,7 @@ module FinanceTracker
           {
             'shared' => {
               'posted_date' => '2024-01-23',
-              'amount' => 14000,
+              'amount' => 140,
               'user_id' => 1,
               'description' => 'BLAHBLAH|Merchandise',
             },
@@ -285,7 +285,7 @@ module FinanceTracker
           {
             'shared' => {
               'posted_date' => '2024-01-23',
-              'amount' => 14000,
+              'amount' => 140,
               'user_id' => 1,
               'description' => 'BLAHBLAH|Pay off credit card',
             },
@@ -297,7 +297,7 @@ module FinanceTracker
           {
             'shared' => {
               'posted_date' => '2024-01-20',
-              'amount' => 15000,
+              'amount' => 150,
               'user_id' => 1,
               'description' => 'BLAHBLAH|Load money into checking account',
             },
@@ -309,7 +309,7 @@ module FinanceTracker
           {
             'shared' => {
               'posted_date' => '2024-02-28',
-              'amount' => 1600000,
+              'amount' => 1600,
               'user_id' => 2,
               'description' => 'BLAHBLAH|Record a paycheck',
             },
@@ -330,8 +330,8 @@ module FinanceTracker
           result4 = ledger.record(transfer4)
           expect(result4).to be_success
           balance = ledger.calculate_account_balances
-          expect(balance).to include({"Asset_1" => 1601000, "Equity_1" => 15000, "Expense_1" => 14000,
-            "Expense_2" => 0, "Liability_1" => 0, "Liability_2" => 0, "Revenue_1" => 1600000})
+          expect(balance).to include({"Asset_1" => 1610.0, "Equity_1" => -150.0, "Expense_1" => 140.0,
+            "Expense_2" => 0.0, "Liability_1" => 0.0, "Liability_2" => 0.0, "Revenue_1" => -1600.0})
         end
       end
     end

@@ -48,7 +48,7 @@ module FinanceTracker
             unprocessed_transfer.delete(:account)
             # need to adjust the amount that was stored (see record_importer.rb)
             #as an integer by multiplying by 100
-            unprocessed_transfer[:amount] = unprocessed_transfer[:amount].to_f/100
+            unprocessed_transfer[:amount] = unprocessed_transfer[:amount]/100.0
             # need to reverse the direction of the transfer since we are dealing with
             # unprocessed records which came from csv files from the bank
             unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
@@ -243,31 +243,35 @@ module FinanceTracker
             end
             transaction_hash
         end
-        def calculate_account_balances(net_ab = false)
-            if net_ab == true
+        def calculate_account_balances(net_all = false)
+            single_account_balance = lambda do |account|
+                if account.entries.empty?
+                    return 0
+                else
+                    balance = account.entries.sum { |entry| (entry.amount * entry.direction) }
+                    return balance
+                end
+            end
+            if net_all == true
                 #return net balance for all accounts
                 net_balance = 0
                 Account.each do |account|
                     normal = account.category.normal
-                    #need to account for fact that the amount is stored as an integer not floating point
-                    balance = account.entries.sum { |entry| ((entry.amount.to_f)/100) * normal * entry.direction }
-                    net_balance += balance * normal
+                    account_balance = single_account_balance.call(account)
+                    net_balance += account_balance * normal
                 end
-                if (net_balance < 1 && net_balance > -1)
-                    net_balance = 0
-                end
+                #need to account for fact that the amount is stored as an integer not floating point
+                net_balance = net_balance/100.0
                 return net_balance
             else
                 balances = {}
-        
                 Account.each do |account|
-                  normal = account.category.normal
-                  balance = account.entries.sum { |entry| ((entry.amount.to_f)/100) * normal * entry.direction }
-                  balances[account.name] = balance
+                    account_balance = single_account_balance.call(account)
+                    balances[account.name] = account_balance/100.0
                 end
                 balances.each do |key, value|
                     if (value < 1 && value > -1)
-                        balances[key] = 0
+                        balances[key] = 0.0
                     end
                 end
                 return balances
