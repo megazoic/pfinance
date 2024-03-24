@@ -180,11 +180,12 @@ module FinanceTracker
             #-d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,
             #\"credit_account_id\":2}"
+            userNick = DB[:users].where(name: "Nick").first
             data = {
                 :shared.to_s => {
                     :posted_date.to_s => transaction["date"],
                     :amount.to_s => transaction["amount"],
-                    :user_id.to_s => 1,
+                    :user_id.to_s => userNick[:id],
                     :notes.to_s => transaction["notes"],
                     :description.to_s => transaction["description"]
                 },
