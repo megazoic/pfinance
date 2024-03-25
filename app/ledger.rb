@@ -59,7 +59,7 @@ module FinanceTracker
                 # we are dealing with a liability account
                 if unprocessed_transfer[:direction] == 1
                     # we are dealing with a debit return all expense accounts
-                    unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
+                    unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expenses")
                 else
                     # we are dealing with a credit
                     if unprocessed_transfer[:description].match(ENV['CC1_PMT_PATTERN'])
@@ -70,7 +70,7 @@ module FinanceTracker
                         # alert user to check for charge on same statement
                         # return all expense accounts but TODO also need to return asset checking account
                         unprocessed_transfer[:alert] = "Refund or cash back"
-                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expenses")
                     end
                 end
             else
@@ -82,7 +82,7 @@ module FinanceTracker
                         unprocessed_transfer[:paired_accounts] = get_paired_accounts("Liabilities")
                     else
                         # we are dealing with purchase return all expense accounts
-                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
+                        unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expenses")
                     end
                 else
                     # we are dealing with work reimbursement or salary
@@ -97,7 +97,7 @@ module FinanceTracker
                         else
                             # we are dealing with payment to us return expense account
                             unprocessed_transfer[:alert] = "Reimbursement"
-                            unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expense")
+                            unprocessed_transfer[:paired_accounts] = get_paired_accounts("Expenses")
                         end
                     end
                 end
@@ -267,7 +267,8 @@ module FinanceTracker
                 balances = {}
                 Account.each do |account|
                     account_balance = single_account_balance.call(account)
-                    balances[account.name] = account_balance/100.0
+                    name = "#{account.id}-#{account.name}"
+                    balances[name] = account_balance/100.0
                 end
                 balances.each do |key, value|
                     if (value < 1 && value > -1)
