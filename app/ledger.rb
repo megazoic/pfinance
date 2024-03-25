@@ -267,7 +267,7 @@ module FinanceTracker
                 balances = {}
                 Account.each do |account|
                     account_balance = single_account_balance.call(account)
-                    name = "#{account.id}-#{account.name}"
+                    name = "#{account.id}-#{account.category.name}-#{account.name}"
                     balances[name] = account_balance/100.0
                 end
                 balances.each do |key, value|
