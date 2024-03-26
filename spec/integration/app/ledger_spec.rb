@@ -8,7 +8,7 @@ module FinanceTracker
             DB[:users].insert(id: 2, name: "Sally")
             DB[:categories].insert(id: 1, name: "Revenue", normal: -1)
             DB[:categories].insert(id: 2, name: "Assets", normal: 1)
-            DB[:categories].insert(id: 3, name: "Expense", normal: 1)
+            DB[:categories].insert(id: 3, name: "Expenses", normal: 1)
             DB[:categories].insert(id: 4, name: "Liabilities", normal: -1)
             DB[:categories].insert(id: 5, name: "CreditCard", normal: -1, parent_id: 4)
             DB[:categories].insert(id: 6, name: "DiscretionarySpending", normal: 1, parent_id: 3)
@@ -330,7 +330,9 @@ module FinanceTracker
           result4 = ledger.record(transfer4)
           expect(result4).to be_success
           balance = ledger.calculate_account_balances
-          expect(balance).to include({"Asset_1" => 1610.0, "Equity_1" => -150.0, "Expense_1" => 140.0,
+          #need to clean up the keys of this hash since they are a combination of the account name and the account id
+          test_hash = balance.map { |k, v| [k.split('-').last, v] }.to_h
+          expect(test_hash).to include({"Asset_1" => 1610.0, "Equity_1" => -150.0, "Expense_1" => 140.0,
             "Expense_2" => 0.0, "Liability_1" => 0.0, "Liability_2" => 0.0, "Revenue_1" => -1600.0})
         end
       end
