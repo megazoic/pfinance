@@ -139,9 +139,9 @@ module FinanceTracker
         end
         get '/account_balances/:net' do
             if params[:net] == 'true'
-                return JSON.generate(@ledger.calculate_account_balances(true))
+                return JSON.generate(@ledger.get_account_balances(true))
             else
-                return JSON.generate(@ledger.calculate_account_balances)
+                return JSON.generate(@ledger.get_account_balances)
             end
         end
         post '/users' do

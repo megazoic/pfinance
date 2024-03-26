@@ -100,7 +100,7 @@ module FinanceTracker
           {
             'account' => ENV['PFINANCE_LIABILITY_1'],
             'amount' => 1600,
-            'description' => 'ELECTRONIC PAYMENT|Payment/Credit',
+            'description' => 'ELECTRONIC PAYMENT,Payment/Credit',
             'posted_date' => '2024-02-13',
             'direction' => "1",
             'date' => '2024-03-09',
@@ -268,74 +268,6 @@ module FinanceTracker
           expect(DB[:unprocessed_records].count).to eq(1)
         end
       end
-      context 'with transactons and entries to balance' do
-        let(:transfer1) do
-          {
-            'shared' => {
-              'posted_date' => '2024-01-23',
-              'amount' => 140,
-              'user_id' => 1,
-              'description' => 'BLAHBLAH|Merchandise',
-            },
-            'debit_account_id' => 4,
-            'credit_account_id' => 1
-          }
-        end
-        let(:transfer2) do
-          {
-            'shared' => {
-              'posted_date' => '2024-01-23',
-              'amount' => 140,
-              'user_id' => 1,
-              'description' => 'BLAHBLAH|Pay off credit card',
-            },
-            'debit_account_id' => 1,
-            'credit_account_id' => 3
-          }
-        end
-        let(:transfer3) do
-          {
-            'shared' => {
-              'posted_date' => '2024-01-20',
-              'amount' => 150,
-              'user_id' => 1,
-              'description' => 'BLAHBLAH|Load money into checking account',
-            },
-            'debit_account_id' => 3,
-            'credit_account_id' => 7
-          }
-        end
-        let(:transfer4) do
-          {
-            'shared' => {
-              'posted_date' => '2024-02-28',
-              'amount' => 1600,
-              'user_id' => 2,
-              'description' => 'BLAHBLAH|Record a paycheck',
-            },
-            'debit_account_id' => 3,
-            'credit_account_id' => 6
-          }
-        end
-        it 'returns a hash for the account balance of all accounts' do
-          #need to load the transactions table and entries table with some data
-          #to test the account balance. this is the format of the data that is sent to Ledger#record(transfer)
-          #{"shared"=>{"posted_date"=>"2024-02-23", "description"=>"a desc", "amount"=>14000, "user_id"=>1}, "debit_account_id"=>1, "credit_account_id"=>2}
-          result1 = ledger.record(transfer1)
-          expect(result1).to be_success
-          result2 = ledger.record(transfer2)
-          expect(result2).to be_success
-          result3 = ledger.record(transfer3)
-          expect(result3).to be_success
-          result4 = ledger.record(transfer4)
-          expect(result4).to be_success
-          balance = ledger.calculate_account_balances
-          #need to clean up the keys of this hash since they are a combination of the account name and the account id
-          test_hash = balance.map { |k, v| [k.split('-').last, v] }.to_h
-          expect(test_hash).to include({"Asset_1" => 1610.0, "Equity_1" => -150.0, "Expense_1" => 140.0,
-            "Expense_2" => 0.0, "Liability_1" => 0.0, "Liability_2" => 0.0, "Revenue_1" => -1600.0})
-        end
-      end
     end
     describe '#transfers_on' do
       it 'returns all transfers for the provided date' do
@@ -373,5 +305,94 @@ module FinanceTracker
         expect(test_array[1]).to eq([])
       end
     end
+    describe '#get_account_balances' do
+    context 'with transactons and entries to balance' do
+      let(:transfer1) do
+        {
+          'shared' => {
+            'posted_date' => '2024-01-23',
+            'amount' => 140,
+            'user_id' => 1,
+            'description' => 'BLAHBLAH|Merchandise',
+          },
+          'debit_account_id' => 4,
+          'credit_account_id' => 1
+        }
+      end
+      let(:transfer2) do
+        {
+          'shared' => {
+            'posted_date' => '2024-01-23',
+            'amount' => 140,
+            'user_id' => 1,
+            'description' => 'BLAHBLAH|Pay off credit card',
+          },
+          'debit_account_id' => 1,
+          'credit_account_id' => 3
+        }
+      end
+      let(:transfer3) do
+        {
+          'shared' => {
+            'posted_date' => '2024-01-20',
+            'amount' => 150,
+            'user_id' => 1,
+            'description' => 'BLAHBLAH|Load money into checking account',
+          },
+          'debit_account_id' => 3,
+          'credit_account_id' => 7
+        }
+      end
+      let(:transfer4) do
+        {
+          'shared' => {
+            'posted_date' => '2024-02-28',
+            'amount' => 1600,
+            'user_id' => 2,
+            'description' => 'BLAHBLAH|Record a paycheck',
+          },
+          'debit_account_id' => 3,
+          'credit_account_id' => 6
+        }
+      end
+      it 'returns a hash for the account balance of all accounts' do
+        #need to load the transactions table and entries table with some data
+        #to test the account balance. this is the format of the data that is sent to Ledger#record(transfer)
+        #{"shared"=>{"posted_date"=>"2024-02-23", "description"=>"a desc", "amount"=>14000, "user_id"=>1}, "debit_account_id"=>1, "credit_account_id"=>2}
+        result1 = ledger.record(transfer1)
+        expect(result1).to be_success
+        result2 = ledger.record(transfer2)
+        expect(result2).to be_success
+        result3 = ledger.record(transfer3)
+        expect(result3).to be_success
+        result4 = ledger.record(transfer4)
+        expect(result4).to be_success
+        balance = ledger.get_account_balances
+        #need to clean up the keys of this hash since they are a combination of the account name and the account id
+        test_hash = balance.map { |k, v| [k.split('-').last, v] }.to_h
+        expect(test_hash).to include({"Asset_1" => 1610.0, "Equity_1" => -150.0, "Expense_1" => 140.0,
+          "Expense_2" => 0.0, "Liability_1" => 0.0, "Liability_2" => 0.0, "Revenue_1" => -1600.0})
+      end
+      context 'with some transactions that are refunds' do
+        it 'does not include the refund in the account balance' do
+          #when payment from checking to credit card is only for refunded item
+          transfer1_refund = transfer1.deep_merge({'shared' => {'refund' => 1}})
+          transfer2_refund = transfer2.deep_merge({'shared' => {'refund' => 1}})
+          result1 = ledger.record(transfer1_refund)
+          expect(result1).to be_success
+          result2 = ledger.record(transfer2_refund)
+          expect(result2).to be_success
+          result3 = ledger.record(transfer3)
+          expect(result3).to be_success
+          result4 = ledger.record(transfer4)
+          expect(result4).to be_success
+          balance = ledger.get_account_balances
+          test_hash = balance.map { |k, v| [k.split('-').last, v] }.to_h
+          expect(test_hash).to include({"Asset_1" => 1750.0, "Equity_1" => -150.0, "Expense_1" => 0.0,
+            "Expense_2" => 0.0, "Liability_1" => 0.0, "Liability_2" => 0.0, "Revenue_1" => -1600.0})
+          end
+      end
+    end
+  end
   end
 end
