@@ -151,8 +151,8 @@ module FinanceTracker
                 t_date_array[2].to_i)
             record_ids = Hash.new
 
-            if transfer['shared']['refund'].nil?
-                transfer['shared']['refund'] = 0
+            if transfer['shared']['refunded'].nil?
+                transfer['shared']['refunded'] = 0
             end
 
             DB.transaction do
@@ -164,7 +164,7 @@ module FinanceTracker
                     description: transfer['shared']['description'],
                     notes: transfer['shared']['notes'],
                     user_id: transfer['shared']['user_id'],
-                    refund: transfer['shared']['refund']
+                    refunded: transfer['shared']['refunded']
                 )
                 # for debit side, money is going into this account
                 record_ids["debit"] = entries.insert(
