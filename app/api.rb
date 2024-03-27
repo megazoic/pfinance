@@ -198,7 +198,7 @@ module FinanceTracker
             result = @ledger.record(data)
             if result.success?
                 #just interested in the total balance
-                JSON.generate({net_balance: @ledger.calculate_account_balances(true)})
+                JSON.generate({net_balance: @ledger.get_account_balances(true)})
             else
                 status 422
                 JSON.generate('error' => result.error_message)
