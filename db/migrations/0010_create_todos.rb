@@ -4,7 +4,7 @@ Sequel.migration do
         primary_key :id
         Date :date, null: false
         TrueClass :completed, default: false
-        String :description, text: true
+        String :description, text: true, null: false
       end
   
       create_table(:todo_transactions) do

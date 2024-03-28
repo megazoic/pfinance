@@ -2,11 +2,14 @@ require 'sinatra/base'
 require 'sinatra/cross_origin'
 require 'json'
 require_relative 'ledger'
+require_relative 'todo_tracker'
 require './app/models/account'
 require './app/models/category'
 require './app/models/transaction'
 require './app/models/entry'
 require './app/models/user'
+require './app/models/todo'
+require './app/models/todo_transaction'
 require_relative 'augmenter'
 
 
@@ -79,26 +82,80 @@ module FinanceTracker
             result = @ledger.skip_unprocessed_record(params[:value])
             JSON.generate(result)
         end
-        post '/transfers' do
+        post '/transactions' do
             # {"shared"=>{"posted_date"=>"2024-02-23", "amount"=>14000, "user_id"=>1}, "debit_account_id"=>1, "credit_account_id"=>2}
             #curl -i -X POST -H "Content-Type: application/json" -d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,
             #\"credit_account_id\":2}"  http://localhost:9292/transfers
             #debit_account is the one that money is going into with direction of +1
             request.body.rewind
-            transfer = JSON.parse(request.body.read)
-            result = @ledger.record(transfer)
+            transaction = JSON.parse(request.body.read)
+            #check for todos
+            if !transaction["shared"]["todo"].nil?
+                todo = Todo.create(date: Date.today, description: transaction["shared"]["todo"], completed: false)
+                todo_tracker = FinanceTracker::TodoTracker.new(todo)
+                #todo_tracker.add_todo(todo.date, false, 'New transaction todo')
+            end
+            result = @ledger.record(transaction)
             if result.success?
+                if !todo.nil?
+                    t = Transaction[result["transfer_ids"]["transaction_id"]]
+                    t.todo = todo
+                    t.save
+                    # Create a TodoTransaction record to associate the Todo with the Transaction
+                    tt = TodoTransaction.create(todo_id: todo.id, transaction_id: t.id)
+                    puts "Transaction: #{t.inspect}"
+                end
+
                 JSON.generate('transfer_ids' => result.transfer_ids)
             else
                 status 422
                 JSON.generate('error' => result.error_message)
             end
         end
-        get '/transfers/:date' do
+        get '/transaction/:date' do
             result = @ledger.transfers_on(params[:date])
             JSON.generate(result)
         end
+        get '/todo_transactions' do
+            todos = Todo.where(completed: false).all
+            todo_transactions = todos.map do |todo|
+              transactions = todo.transactions.map do |transaction|
+                {
+                  transaction_posted_date: transaction.posted_date,
+                  transaction_description: transaction.description,
+                  transaction_notes: transaction.notes,
+                  todo_date: todo.date,
+                  todo_description: todo.description,
+                  todo_id: todo.id
+                }
+              end
+              transactions
+            end.flatten
+            JSON.generate(todo_transactions)
+        end
+        post '/todos/completed' do
+            # Parse the JSON request body
+            data = JSON.parse(request.body.read)
+            puts "**** todo data = #{data}"
+          
+            # Get the list of todo IDs
+            todo_ids = data['todos']
+            count = 0
+            # Mark each todo as completed
+            todo_ids.each do |id|
+              todo = Todo[id]
+              if todo
+                count += 1
+                todo.update(completed: true)
+              end
+            end
+          
+            # Return a success response
+            status 200
+            response = { message: "#{count} Todos marked as completed" }
+            JSON.generate(response)
+          end
         post '/accounts' do
             account = JSON.parse(request.body.read)
             result = @augmenter.create(account, :accounts)
@@ -183,6 +240,7 @@ module FinanceTracker
             #-d "{\"shared\":{\"posted_date\":\"2024-02-23\",
             #\"amount\":14000,\"user_id\":1},\"debit_account_id\":1,
             #\"credit_account_id\":2}"
+            # shared key could also include a todo key
             userNick = DB[:users].where(name: "Nick").first
             data = {
                 :shared.to_s => {
@@ -197,6 +255,21 @@ module FinanceTracker
             }
             result = @ledger.record(data)
             if result.success?
+                #check to see if a todo was included
+                if !transaction["todo"].nil?
+                    todo = Todo.create(date: Date.today, description: transaction["todo"], completed: false)
+                    todo_tracker = FinanceTracker::TodoTracker.new(todo)
+                    t = Transaction[result["transfer_ids"]["transaction_id"]]
+                    t.todo = todo
+                    t.save
+                    # Create a TodoTransaction record to associate the Todo with the Transaction
+                    #tt = TodoTransaction.create(todo_id: todo.id, transaction_id: t.id)
+                    todo_transaction = TodoTransaction.new
+                    todo_transaction.todo_id = todo.id
+                    todo_transaction.transaction_id = t.id
+                    tt = todo_transaction.save
+                    puts "Transaction: #{t.inspect} and todo_transaction: #{tt.inspect}"
+                end
                 #just interested in the total balance
                 JSON.generate({net_balance: @ledger.get_account_balances(true)})
             else

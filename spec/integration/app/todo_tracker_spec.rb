@@ -28,7 +28,7 @@ RSpec.describe FinanceTracker::TodoTracker do
   end
   describe '#add_related_todos' do
     it 'adds a related Todo' do
-      related_todo = Todo.create(date: Date.today)
+      related_todo = Todo.create(date: Date.today, description: 'Related todo')
       @todo_tracker.add_transaction(@transaction, Date.today, false, 'My new todo')
       @todo_tracker.add_related_todo(related_todo)
       expect(@todo_tracker.todo.related_todos).to include(related_todo)
@@ -36,7 +36,7 @@ RSpec.describe FinanceTracker::TodoTracker do
   end
   describe '#remove_related_todo' do
     it 'removes a related Todo' do
-      related_todo = Todo.create(date: Date.today)
+      related_todo = Todo.create(date: Date.today, description: 'Related todo')
       @todo_tracker.add_transaction(@transaction, Date.today, false, 'My new todo')
       @todo_tracker.add_related_todo(related_todo)
       @todo_tracker.remove_related_todo(related_todo)
