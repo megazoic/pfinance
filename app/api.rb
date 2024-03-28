@@ -103,8 +103,12 @@ module FinanceTracker
                     t.todo = todo
                     t.save
                     # Create a TodoTransaction record to associate the Todo with the Transaction
-                    tt = TodoTransaction.create(todo_id: todo.id, transaction_id: t.id)
-                    puts "Transaction: #{t.inspect}"
+                    #tt = TodoTransaction.create(todo_id: todo.id, transaction_id: t.id)
+                    #puts "Transaction: #{t.inspect}"
+                    todo_transaction = TodoTransaction.new
+                    todo_transaction.todo_id = todo.id
+                    todo_transaction.transaction_id = t.id
+                    tt = todo_transaction.save
                 end
 
                 JSON.generate('transfer_ids' => result.transfer_ids)
@@ -137,8 +141,6 @@ module FinanceTracker
         post '/todos/completed' do
             # Parse the JSON request body
             data = JSON.parse(request.body.read)
-            puts "**** todo data = #{data}"
-          
             # Get the list of todo IDs
             todo_ids = data['todos']
             count = 0
@@ -155,7 +157,7 @@ module FinanceTracker
             status 200
             response = { message: "#{count} Todos marked as completed" }
             JSON.generate(response)
-          end
+        end
         post '/accounts' do
             account = JSON.parse(request.body.read)
             result = @augmenter.create(account, :accounts)
@@ -268,7 +270,6 @@ module FinanceTracker
                     todo_transaction.todo_id = todo.id
                     todo_transaction.transaction_id = t.id
                     tt = todo_transaction.save
-                    puts "Transaction: #{t.inspect} and todo_transaction: #{tt.inspect}"
                 end
                 #just interested in the total balance
                 JSON.generate({net_balance: @ledger.get_account_balances(true)})
