@@ -24,7 +24,11 @@ module FinanceTracker
             return [] unless unprocessed_record
             unprocessed_record[:refund] = 1
             result = DB[:unprocessed_records].where(id: unprocessed_record[:id]).update(unprocessed_record)
-            result
+            if result == 1
+                {result: "success"}
+            else
+                {result: "failure"}
+            end
         end
         def skip_unprocessed_record(value)
             # get next unprocessed record that needs to be skipped

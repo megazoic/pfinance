@@ -74,7 +74,6 @@ module FinanceTracker
             JSON.generate(result)
         end
         post '/next_unprocessed_record/refund/:value' do
-            puts "params[:value] = #{params[:value]}"
             result = @ledger.refund_unprocessed_record(params[:value])
             JSON.generate(result)
         end
