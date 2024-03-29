@@ -110,25 +110,34 @@ module FinanceTracker
             unprocessed_transfer[:direction] = unprocessed_transfer[:direction] * -1
             unprocessed_transfer
         end
-        def get_paired_accounts(account_type)
+        def get_paired_accounts(account_type, category_name = '')
             root_cat = Category.where(name: account_type).first
-            #check if root_cat has descendants
+            paired_accounts = {}
+            # Append the root category name to the existing category_name string
+            category_name = category_name.empty? ? root_cat[:name] : "#{category_name}->#{root_cat[:name]}"
+  
+            # Check if root_cat has descendants
             if root_cat.has_descendants?
-                all_cats = root_cat.return_descendants
-                paired_accounts = {}
-                all_cats.each do |cat|
-                    accounts = Account.where(category_id: cat[:id]).all
-                    accounts.each do |account|
-                        paired_accounts[account.values[:id]] = account.values[:name]
-                    end
-                end
-            else
-                accounts = Account.where(category_id: root_cat.id).all
-                paired_accounts = {}
+              all_cats = root_cat.return_descendants
+              all_cats.each do |cat|
+                # Append the category name to the existing category_name string
+                new_category_name = category_name.empty? ? cat[:name] : "#{category_name}->#{cat[:name]}"
+                accounts = Account.where(category_id: cat[:id]).all
                 accounts.each do |account|
-                    paired_accounts[account.values[:id]] = account.values[:name]
+                  # Append the category name to the account name
+                  paired_accounts[account.values[:id]] = "#{new_category_name}:#{account.values[:name]}"
                 end
+                # Recursively call get_paired_accounts for each descendant category
+                get_paired_accounts(cat[:name], new_category_name)
+              end
+            else
+              accounts = Account.where(category_id: root_cat.id).all
+              accounts.each do |account|
+                # Append the category name to the account name
+                paired_accounts[account.values[:id]] = "#{category_name}:#{account.values[:name]}"
+              end
             end
+          
             paired_accounts
         end
         def record(transfer)
