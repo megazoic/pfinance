@@ -12,12 +12,13 @@ module FinanceTracker
                 return ImportResult.new(false, nil, message)
             end
             imported_records =  DB[:unprocessed_records]
+
             record_id = imported_records.insert(
                 account: record_to_import["account"],
                 posted_date: Date.iso8601(record_to_import["posted_date"]),
                 date: Date.today,
                 # amounts stored as integers in cents
-                amount: (record_to_import["amount"] * 100).to_i,
+                amount: (record_to_import["amount"].to_f * 100.0).to_i,
                 description: record_to_import["description"],
                 direction: record_to_import["direction"].to_i,
                 skip: record_to_import["skip"],
