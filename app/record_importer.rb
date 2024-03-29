@@ -30,7 +30,7 @@ module FinanceTracker
             is_valid = {"account" => 0, "amount" => 0, "posted_date" => 0,
             "description" => 0, "direction" => 0}
             ["6723", "3065", "0855"].include?(record_to_import["account"]) ? is_valid["account"] = 1 : false
-            record_to_import["amount"].to_i > 0 ? is_valid["amount"] = 1 : false
+            (record_to_import["amount"].to_f * 100.0).to_i > 0 ? is_valid["amount"] = 1 : false
             begin
                 Date.iso8601(record_to_import["posted_date"]).is_a?(Date) == true ? is_valid["posted_date"] = 1 : false
             rescue
