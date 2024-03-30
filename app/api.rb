@@ -109,8 +109,8 @@ module FinanceTracker
                     todo_transaction.transaction_id = t.id
                     tt = todo_transaction.save
                 end
-
-                JSON.generate('transfer_ids' => result.transfer_ids)
+                output = {result: "success", transfer_ids: result.transfer_ids}
+                JSON.generate(output)
             else
                 status 422
                 JSON.generate('error' => result.error_message)
