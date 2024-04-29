@@ -196,6 +196,7 @@ module FinanceTracker
             JSON.generate(result)
         end
         get '/account_balances/:net' do
+            #this will return balances for all accounts during the previous month
             if params[:net] == 'true'
                 return JSON.generate(@ledger.get_account_balances(true))
             else

@@ -21,6 +21,15 @@ class Account < Sequel::Model
             if entries.empty?
                 return 0
             else
+                # only want last month's entries
+                #entries = entries.select { |entry| entry.transaction.posted_date >= Date.today.prev_month.beginning_of_month }
+                entries = entries.select do |entry|
+                    posted_date = entry.transaction.posted_date
+                    beginning_of_last_month = Date.new(Date.today.year, Date.today.month, 1).prev_month
+                    beginning_of_this_month = Date.new(Date.today.year, Date.today.month, 1)
+                  
+                    posted_date >= beginning_of_last_month && posted_date < beginning_of_this_month
+                end
                 balance = entries.sum { |entry| (entry.amount * entry.direction) }
                 return balance
             end
