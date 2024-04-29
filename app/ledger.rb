@@ -49,7 +49,7 @@ module FinanceTracker
             account = a.get_corresp_app_account(unprocessed_transfer[:account])
             unprocessed_transfer[:account_id] = account.id
             unprocessed_transfer[:account_name] = account.name
-            unprocessed_transfer[:original_account] = unprocessed_transfer[:account]
+            unprocessed_transfer[:description_concat] = "#{unprocessed_transfer[:account]}-#{unprocessed_transfer[:description]}"
             unprocessed_transfer.delete(:account)
             # need to adjust the amount that was stored (see record_importer.rb)
             #as an integer by multiplying by 100
